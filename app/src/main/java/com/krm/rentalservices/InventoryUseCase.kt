@@ -48,7 +48,7 @@ class InventoryUseCase @Inject constructor(private val googleSheetRepo: IGoogleS
             val response = googleSheetRepo.addInvItem(item.id, item.name, item.quantity)
             if (response.isSuccessful) {
                 emit(Resource.Success("Success"))
-            }else {
+            } else {
                 emit(Resource.Error(response.message()))
             }
         }

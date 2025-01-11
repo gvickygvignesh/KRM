@@ -19,6 +19,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "KRM Rental Services"
+rootProject.name = "KRM"
 include(":app")
- 
+include(":core")

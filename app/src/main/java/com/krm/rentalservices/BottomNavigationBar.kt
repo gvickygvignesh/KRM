@@ -14,8 +14,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 fun BottomNavigationBar(navController: NavController) {
     val items = listOf(
         BottomNavItem.Order,
-        BottomNavItem.ListItems,
-        BottomNavItem.AddItem
+        BottomNavItem.ProdList,
+        BottomNavItem.Inventory,
+        BottomNavItem.CustomerDirectory,
+        BottomNavItem.MoreOptions
     )
 
     NavigationBar { // Material 3's NavigationBar

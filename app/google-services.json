@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "881751430690",
+    "project_id": "krm-rental-services-ce4be",
+    "storage_bucket": "krm-rental-services-ce4be.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:881751430690:android:7a139f66051a7b0d46dc7b",
+        "android_client_info": {
+          "package_name": "com.krm.rentalservices"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgpVTghtKiiezdZyfwgVikP43DTgmIuCY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,6 +1,6 @@
 package com.krm.rentalservices
 
-data class AddInventoryState(
+data class AddFireStoreState(
     var isLoading: Boolean = false,
     var success: Int = 0,
     var data: String = "",

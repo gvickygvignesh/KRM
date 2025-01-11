@@ -6,4 +6,8 @@ object Constants {
     val spreadSheetID = "18BmJq3d7Jr2eT1SGcBQFnJyiLQ1xCKpOoETxijoN5iA"
     val invSheetName = "Inventory"
     val eqSheetName = "Equipments"
+
+    const val MANAGE_INV_ROUTE = "manage_inv"
+    const val ADD_CUSTOMER_ROUTE = "add_customer"
+    const val ADD_PRODUCT = "add_prod"
 }

@@ -9,5 +9,5 @@ data class InventoryItem(
     var rentedCount: Int = 0,
     var avlCount: Int = 0,
     var damagedCount: Int = 0,
-    var timestamp: Timestamp?
+    var timestamp: Timestamp? = null
 )

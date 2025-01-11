@@ -50,7 +50,7 @@ fun InventoryScreen(
         }
     }
 
-    Scaffold(
+    /*Scaffold(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -77,7 +77,7 @@ fun InventoryScreen(
             }
         }
 
-    }
+    }*/
 }
 
 @Composable

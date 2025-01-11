@@ -10,7 +10,7 @@ plugins {
 android {
     signingConfigs {
         getByName("debug") {
-            storeFile = file("E:\\Projects\\KRM\\debug.keystore")
+            storeFile = file("E:\\Vicky\\Workspace\\KRM\\debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"

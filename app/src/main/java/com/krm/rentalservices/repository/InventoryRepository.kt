@@ -111,38 +111,42 @@ class InventoryRepository @Inject constructor(private val firebaseFirestore: Fir
         trySend(Resource.Loading())
 
         val listenerRegistration: ListenerRegistration =
-            fbftDB.firestore.collection(FIREBASE_INVENTORY_REF).addSnapshotListener { value, error ->
-                try {
-                    if (value?.isEmpty == false) {
-                        val invItems = mutableStateListOf<InventoryItem>()
-                        val list = value.documents
-                        for (listItem in list) {
-                            val item = InventoryItem(
-                                listItem.get("prodId").toString(),
-                                listItem.get("prodName").toString(),
-                                listItem.get("totCount") as Int,
-                                listItem.get("rentedCount") as Int,
-                                listItem.get("availCount") as Int,
-                                listItem.get("damagedCount") as Int,
-                                listItem.get("timeStamp") as Timestamp
-                            )
-                            invItems.add(item)
+            fbftDB.firestore.collection(FIREBASE_INVENTORY_REF)
+                .addSnapshotListener { value, error ->
+                    try {
+                        if (value?.isEmpty == false) {
+
+                            val invItems = mutableStateListOf<InventoryItem>()
+                            val documents = value.documents
+                            for (document in documents) {
+                                val invItem: InventoryItem =
+                                    document.toObject(InventoryItem::class.java)!!
+                                /* val item = InventoryItem(
+                                     document.get("prodId").toString(),
+                                     document.get("prodName").toString(),
+                                     document.get("totCount") as Long,
+                                     document.get("rentedCount") as Int,
+                                     document.get("availCount") as Int,
+                                     document.get("damagedCount") as Int,
+                                     document.get("timeStamp") as Timestamp
+                                 )*/
+                                invItems.add(invItem)
+                            }
+
+                            trySend((Resource.Success(invItems)))
                         }
 
-                        trySend((Resource.Success(invItems)))
+                    } catch (e: Exception) {
+                        trySend(Resource.Error(e.message.toString()))
                     }
 
-                } catch (e: Exception) {
-                    trySend(Resource.Error(e.message.toString()))
-                }
-
-                if (error != null) {
-                    val errMsg = error.message
-                    if (errMsg != null) {
-                        trySend(Resource.Error(errMsg))
+                    if (error != null) {
+                        val errMsg = error.message
+                        if (errMsg != null) {
+                            trySend(Resource.Error(errMsg))
+                        }
                     }
                 }
-            }
 
         awaitClose {
             listenerRegistration.remove() // Remove the listener when the flow is closed

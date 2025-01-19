@@ -28,6 +28,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,10 +49,10 @@ import com.krm.rentalservices.viewmodel.SUCCESS
 @Composable
 fun ProductList(viewModel: InventoryViewModel, navController: NavHostController) {
 //    val items = viewModel.itemsFlow.collectAsState(initial = emptyList()).value // Collect items
-    val state = viewModel.prodState.value
+    val state = viewModel.prodState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
 
-    when (state.success) {
+    when (state.value.success) {
         SUCCESS, ERROR_INTERNET -> {
             ProdCardList(state, viewModel, navController)
         }
@@ -63,12 +65,14 @@ fun ProductList(viewModel: InventoryViewModel, navController: NavHostController)
           false -> TODO()
       }*/
 
+    ProdCardList(state, viewModel, navController)
+
 
 }
 
 @Composable
 fun ProdCardList(
-    state: ProdState,
+    state: State<ProdState>,
     viewModel: InventoryViewModel,
     navController: NavHostController
 ) {
@@ -93,7 +97,7 @@ fun ProdCardList(
             verticalAlignment = Alignment.CenterVertically
         ) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.data) { item ->
+                items(state.value.data) { item ->
                     ProductItemRow(item, viewModel, navController)
                 }
             }
@@ -176,32 +180,6 @@ fun ProductItemRow(
 
 }
 
-@Composable
-fun InventoryItemCard(
-    item: Product,
-    onDescChange: (String) -> Unit
-) {
-    var desc by remember { mutableStateOf(item.description) }
-
-    Row(
-        modifier = Modifier
-            .padding(8.dp)
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = item.name, fontSize = 20.sp)
-        Row {
-            TextField(
-                value = desc,
-                onValueChange = { desc = it },
-                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text)
-            )
-            Button(onClick = { onDescChange(desc) }) {
-                Text("Update")
-            }
-        }
-    }
-}
 
 @Composable
 fun YesNoDialog(

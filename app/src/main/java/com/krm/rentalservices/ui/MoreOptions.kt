@@ -14,7 +14,7 @@ import com.krm.rentalservices.viewmodel.InventoryViewModel
 @Composable
 fun MoreOptions(viewModel: InventoryViewModel = hiltViewModel(), navController: NavHostController) {
 //    val items = viewModel.itemsFlow.collectAsState(initial = emptyList()).value // Collect items
-    val state = viewModel.prodState.value
+//    val state = viewModel.prodState.value
     var showDialog by remember { mutableStateOf(false) }
 
     Text(text = "Coming soon")

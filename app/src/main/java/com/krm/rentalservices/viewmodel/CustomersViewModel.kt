@@ -9,12 +9,14 @@ import com.krm.rentalservices.AddFireStoreState
 import com.krm.rentalservices.CustomerState
 import com.krm.rentalservices.Resource
 import com.krm.rentalservices.model.Customer
+import com.krm.rentalservices.model.OrderItem
 import com.krm.rentalservices.repository.CustomersRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -26,8 +28,10 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
     ViewModel() {
 
     private var job: Job? = null
-    private val _state = mutableStateOf(CustomerState())
-    val state: State<CustomerState> = _state
+
+    //    private val _customerState = mutableStateOf(CustomerState())
+    private val _customerState = MutableStateFlow(CustomerState())
+    val customerState = _customerState.asStateFlow()
 
     private val _addCustState = mutableStateOf(AddFireStoreState())
     val addCustState: State<AddFireStoreState> = _addCustState
@@ -47,14 +51,14 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
             customersRepository.fetchCustomers().onEach { result ->
                 when (result) {
                     is Resource.Error ->
-                        _state.value = CustomerState(
+                        _customerState.value = CustomerState(
                             isLoading = false,
                             internet = false,
                             success = ERROR_HTTP
                         )
 
                     is Resource.Internet -> {
-                        _state.value = CustomerState(
+                        _customerState.value = CustomerState(
                             isLoading = false,
                             internet = true,
                             success = ERROR_INTERNET
@@ -62,14 +66,14 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
                     }
 
                     is Resource.Loading -> {
-                        _state.value = CustomerState(
+                        _customerState.value = CustomerState(
                             isLoading = true,
                             internet = false
                         )
                     }
 
                     is Resource.Success -> {
-                        _state.value = CustomerState(
+                        _customerState.value = CustomerState(
                             isLoading = false,
                             internet = false,
                             success = SUCCESS,

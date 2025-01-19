@@ -37,7 +37,7 @@ class InventoryRepository @Inject constructor(private val firebaseFirestore: Fir
                             val item = Product(
                                 listItem.get("id").toString(),
                                 listItem.get("name").toString(),
-                                listItem.get("rentalPrice") as Double,
+                                listItem.get("rentalPrice") as Long,
                                 listItem.get("description").toString(),
                                 Timestamp.now()
                             )
@@ -68,7 +68,7 @@ class InventoryRepository @Inject constructor(private val firebaseFirestore: Fir
     fun addProduct(item: Product): Flow<Resource<String>> = callbackFlow {
         trySend(Resource.Loading())
         val db = Firebase.firestore
-        val newDocRef = db.collection("items").document()
+        val newDocRef = db.collection(FIREBASE_ITEMS_REF).document()
         item.id = newDocRef.id
 
         newDocRef.set(item).addOnSuccessListener {
@@ -115,22 +115,24 @@ class InventoryRepository @Inject constructor(private val firebaseFirestore: Fir
                 .addSnapshotListener { value, error ->
                     try {
                         if (value?.isEmpty == false) {
-
                             val invItems = mutableStateListOf<InventoryItem>()
-                            val documents = value.documents
-                            for (document in documents) {
-                                val invItem: InventoryItem =
-                                    document.toObject(InventoryItem::class.java)!!
-                                /* val item = InventoryItem(
-                                     document.get("prodId").toString(),
-                                     document.get("prodName").toString(),
-                                     document.get("totCount") as Long,
-                                     document.get("rentedCount") as Int,
-                                     document.get("availCount") as Int,
-                                     document.get("damagedCount") as Int,
-                                     document.get("timeStamp") as Timestamp
-                                 )*/
-                                invItems.add(invItem)
+                            val list = value.documents
+//
+                            for (listItem in list) {
+                                val inventoryItem: InventoryItem? =
+                                    listItem.toObject(InventoryItem::class.java)
+                                /*  val item = InventoryItem(
+                                      listItem.get("prodId").toString(),
+                                      listItem.get("prodName").toString(),
+                                      listItem.get("totCount") as Int,
+                                      listItem.get("rentedCount") as Int,
+                                      listItem.get("availCount") as Int,
+                                      listItem.get("damagedCount") as Int,
+                                      listItem.get("timeStamp") as Timestamp
+                                  )*/
+                                if (inventoryItem != null) {
+                                    invItems.add(inventoryItem)
+                                }
                             }
 
                             trySend((Resource.Success(invItems)))
@@ -157,7 +159,7 @@ class InventoryRepository @Inject constructor(private val firebaseFirestore: Fir
         trySend(Resource.Loading())
         val db = Firebase.firestore
         val newDocRef = db.collection(FIREBASE_INVENTORY_REF).document()
-
+        item.id = newDocRef.id
         newDocRef.set(item).addOnSuccessListener {
             trySend(Resource.Success(newDocRef.id))
             Log.d(TAG, "Inventory added: success ${newDocRef.id}")
@@ -168,6 +170,17 @@ class InventoryRepository @Inject constructor(private val firebaseFirestore: Fir
             }
         }
 
+        awaitClose()
+    }
+
+    fun deleteInventoryItem(item: InventoryItem): Flow<Resource<String>> = callbackFlow {
+        val db = Firebase.firestore
+        db.collection(FIREBASE_INVENTORY_REF).document(item.id).delete().addOnSuccessListener {
+            trySend(Resource.Success(item.id))
+            Log.d(TAG, "delete: success ${item.id}")
+        }.addOnFailureListener {
+            trySend(Resource.Error(it.localizedMessage ?: "Unknown Error"))
+        }
         awaitClose()
     }
 }

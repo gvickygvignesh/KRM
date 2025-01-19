@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -20,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,7 +65,7 @@ fun ManageInventory(
     var formIsValid by remember { mutableStateOf(true) }
     var validationMessage by remember { mutableStateOf("") }
 
-    val prodState = viewModel.prodState.value
+    val prodState = viewModel.prodState.collectAsState()
 //    val state = viewModel.addProdState.value
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
 
@@ -89,24 +91,26 @@ fun ManageInventory(
 
         val ind = CircularProgressIndicator(LocalContext.current)
 
-        when (prodState.success) {
+        when (prodState.value.success) {
             SUCCESS, ERROR_INTERNET -> {
                 // Spinner Composable
                 ProductSpinner(
-                    products = prodState.data,
+                    products = prodState.value.data,
                     selectedProduct = selectedProduct,
                     onProductSelected = { product ->
                         selectedProduct = product
                         prodID = selectedProduct?.id.toString()
                         prodName = selectedProduct?.name.toString()
                         println("Selected Product: ${product.name}")
-                    }
+                    },
+                    modifier = Modifier // Ensures dropdown aligns correctly
+                        .wrapContentSize()
                 )
 
             }
         }
 
-        when (prodState.isLoading) {
+        when (prodState.value.isLoading) {
             true -> ind.show()
             false -> ind.hide()
         }
@@ -310,7 +314,8 @@ fun ProductSpinner(
 fun ProductSpinner(
     products: List<Product>,
     selectedProduct: Product?, // Pass the default product if available
-    onProductSelected: (Product) -> Unit
+    onProductSelected: (Product) -> Unit,
+    modifier: Modifier
 ) {
     var expanded by remember { mutableStateOf(false) } // Controls dropdown visibility
     var selectedItem by remember { mutableStateOf(selectedProduct ?: products.firstOrNull()) }
@@ -320,19 +325,21 @@ fun ProductSpinner(
         onExpandedChange = { expanded = !expanded } // Toggle dropdown visibility
     ) {
         OutlinedTextField(
-            value = selectedItem?.name ?: "Select a Product", // Show default text
+            value = selectedItem?.name ?: "Select", // Show default text
             onValueChange = {},
             readOnly = true, // Makes the field uneditable
             label = { Text("Product") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
+            modifier = modifier
+//            /*modifier = Modifier
                 .menuAnchor() // Ensures dropdown aligns correctly
-                .fillMaxWidth()
+                .wrapContentSize()
         )
 
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = { expanded = false },
+            modifier = modifier
         ) {
             products.forEach { product ->
                 DropdownMenuItem(

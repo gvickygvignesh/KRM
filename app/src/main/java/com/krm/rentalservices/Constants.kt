@@ -10,4 +10,6 @@ object Constants {
     const val MANAGE_INV_ROUTE = "manage_inv"
     const val ADD_CUSTOMER_ROUTE = "add_customer"
     const val ADD_PRODUCT = "add_prod"
+//    const val ORDER_LIST_ROUTE = "order_list"
+    const val ORDER_ROUTE = "order"
 }

@@ -1,7 +1,6 @@
-// InventoryList.kt
+// ItemListScreen.kt
 package com.krm.rentalservices.ui
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -34,41 +34,59 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
-import com.krm.rentalservices.InventoryState
-import com.krm.rentalservices.model.InventoryItem
+import androidx.navigation.NavHostController
+import com.krm.rentalservices.Constants
+import com.krm.rentalservices.RentalOrderState
+import com.krm.rentalservices.model.RentalOrder
 import com.krm.rentalservices.viewmodel.ERROR_INTERNET
-import com.krm.rentalservices.viewmodel.InventoryViewModel
+import com.krm.rentalservices.viewmodel.RentalOrderViewModel
 import com.krm.rentalservices.viewmodel.SUCCESS
 
-val TAG: String = "Sothanai"
-
 @Composable
-fun InventoryScreen(
-    viewModel: InventoryViewModel = hiltViewModel(),
-    navController: NavController
+fun RentalOrderList(
+    viewModel: RentalOrderViewModel = hiltViewModel(),
+    navController: NavHostController
 ) {
-
-    val state = viewModel.invState.collectAsState()
+    //    val items = viewModel.itemsFlow.collectAsState(initial = emptyList()).value // Collect items
+    val state = viewModel.rentalOrderState.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
 
     when (state.value.success) {
         SUCCESS, ERROR_INTERNET -> {
-            InventoryCardList(state, viewModel, navController)
+            RentalOrderList(state, viewModel, navController)
         }
     }
 
-    InventoryCardList(state, viewModel, navController)
+    RentalOrderList(state, viewModel, navController)
+    /*  when (state.isLoading) {
+          true -> {
+              CircularProgressIndicator()
+          }
 
-    /*Scaffold(
+          false -> TODO()
+      }*/
+
+
+}
+
+@Composable
+fun RentalOrderList(
+    state: State<RentalOrderState>,
+    viewModel: RentalOrderViewModel,
+    navController: NavHostController
+) {
+
+
+    Scaffold(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    navController.navigate(Constants.MANAGE_INV_ROUTE)
+                    navController.navigate(Constants.ORDER_ROUTE)
                 },
                 modifier = Modifier.padding(16.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Add,
+                    imageVector = Icons.Default.ShoppingCart,
                     contentDescription = "Add"
                 )
             }
@@ -80,78 +98,17 @@ fun InventoryScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.value.data) { invItem ->
-//                    InventoryCardList(invItem, {}, {})
-                }
-            }
-        }
-
-    }*/
-}
-
-@Composable
-fun InventoryCardList(
-    state: State<InventoryState>,
-    viewModel: InventoryViewModel,
-    navController: NavController
-) {
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    navController.navigate("manage_inv")
-                },
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Manage Inventory"
-                )
-            }
-        }
-    ) { innerPadding ->
-        Row(
-            modifier = Modifier.padding(innerPadding),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                Log.d(TAG, "InventoryCardList: size" + state.value.data.size)
-                items(state.value.data) { invItem ->
-                    InventoryCardRow(invItem, viewModel, {})
+                items(state.value.data) { rentalOrder ->
+                    RentalOrderCard(rentalOrder, {}, {})
                 }
             }
         }
     }
 }
 
+
 @Composable
-fun InventoryCardRow(
-    inventoryItem: InventoryItem,
-    viewModel: InventoryViewModel,
-    onEdit: () -> Unit,
-//    onDelete: () -> Unit
-) {
-
-    var showDialog by remember { mutableStateOf(false) }
-
-    if (showDialog) {
-        YesNoDialog(
-            onDismissRequest = { showDialog = false },
-            onConfirm = {
-                // Handle Yes action
-                viewModel.deleteInventoryItem(inventoryItem)
-                showDialog = false
-//                Toast.makeText(LocalContext.current, "Confirmed", Toast.LENGTH_SHORT).show()
-            },
-            onCancel = {
-                // Handle No action
-                showDialog = false
-//                Toast.makeText(LocalContext.current, "Canceled", Toast.LENGTH_SHORT).show()
-            }
-        )
-    }
-
+fun RentalOrderCard(rentalOrder: RentalOrder, onEdit: () -> Unit, onDelete: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -164,26 +121,26 @@ fun InventoryCardRow(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            Log.d(TAG, "InventoryCard: $inventoryItem")
+            // Customer Details
             Text(
-                text = "Name: ${inventoryItem.prodName}",
+                text = "Customer Name: ${rentalOrder.customerName}",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Total Count: ${inventoryItem.totCount}",
+                text = "Order status: ${rentalOrder.orderStatus}",
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "Rented Count: ${inventoryItem.rentedCount}",
+                text = "Order date: ${rentalOrder.orderDate}",
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "Available Count: ${inventoryItem.avlCount}",
+                text = "Total amount: ${rentalOrder.totalAmt}",
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "Damaged Count: ${inventoryItem.damagedCount}",
+                text = "Balance amount: ${rentalOrder.balanceAmt}",
                 style = MaterialTheme.typography.bodyMedium
             )
 
@@ -201,7 +158,7 @@ fun InventoryCardRow(
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                IconButton(onClick = { showDialog = true }) {
+                IconButton(onClick = onDelete) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
@@ -213,21 +170,37 @@ fun InventoryCardRow(
     }
 }
 
-
-/*@Preview
+/*@Preview(showBackground = true)
 @Composable
-fun InvPreview() {
-    InventoryItemCard(
-        item = Product(
-            id = "123",
-            name = "Sample Item",
-            rentalPrice = 45.0,
-            description = "This is a sample product",
-            Timestamp.now()
+fun CustomerCardListPreview() {
+    val sampleCustomers = listOf(
+        Customer(
+            "John Doe",
+            "Regular",
+            "123 Street, City",
+            "9876543210",
+            "1234",
+            "Passport",
+            "photo1.jpg",
+            "",
+            null
         ),
-        onDescChange = { updatedDescription ->
-            println("Description changed to: $updatedDescription")
-        })
+        Customer(
+            "Jane Smith",
+            "VIP",
+            "456 Avenue, Town",
+            "8765432109",
+            "5678",
+            "Driving License",
+            "photo2.jpg",
+            "",
+            null
+        )
+    )
+
+
 }*/
+
+
 
 

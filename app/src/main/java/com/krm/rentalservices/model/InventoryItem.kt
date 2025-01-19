@@ -3,6 +3,7 @@ package com.krm.rentalservices.model
 import com.google.firebase.Timestamp
 
 data class InventoryItem(
+    var id: String = "",
     var prodId: String = "",
     var prodName: String = "",
     var totCount: Int = 0,

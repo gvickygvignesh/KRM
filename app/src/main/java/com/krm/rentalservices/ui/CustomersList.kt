@@ -23,6 +23,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,10 +45,10 @@ import com.krm.rentalservices.viewmodel.SUCCESS
 @Composable
 fun CustomersList(viewModel: CustomersViewModel = hiltViewModel(), navController: NavHostController) {
     //    val items = viewModel.itemsFlow.collectAsState(initial = emptyList()).value // Collect items
-    val state = viewModel.state.value
+    val state = viewModel.customerState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
 
-    when (state.success) {
+    when (state.value.success) {
         SUCCESS, ERROR_INTERNET -> {
             CustomerCardList(state, viewModel, navController)
         }
@@ -66,7 +68,7 @@ fun CustomersList(viewModel: CustomersViewModel = hiltViewModel(), navController
 
 @Composable
 fun CustomerCardList(
-    state: CustomerState,
+    state: State<CustomerState>,
     viewModel: CustomersViewModel,
     navController: NavHostController
 ) {
@@ -93,7 +95,7 @@ fun CustomerCardList(
             verticalAlignment = Alignment.CenterVertically
         ) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.data) { customer ->
+                items(state.value.data) { customer ->
                     CustomerCard(customer, {}, {})
                 }
             }

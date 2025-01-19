@@ -115,7 +115,7 @@ fun AddProduct(viewModel: InventoryViewModel, navController: NavController) {
         Button(
             onClick = {
                 val quantity = itemDesc
-                val price = itemPrice.toDoubleOrNull() ?: 0.0
+                val price = itemPrice.toLongOrNull() ?: 0
                 val name = itemName
                 if (selectedItem?.id?.isEmpty() == false) {
                     viewModel.updateProduct(

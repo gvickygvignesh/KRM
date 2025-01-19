@@ -51,11 +51,14 @@ fun MainScreen(inventoryViewModel: InventoryViewModel) {
     Scaffold(bottomBar = { BottomNavigationBar(navController) }) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = BottomNavItem.Order.route,
+            startDestination = BottomNavItem.OrderList.route,
             Modifier.padding(innerPadding)
         ) {
-            composable(BottomNavItem.Order.route) {
-                Order(inventoryViewModel, navController)
+            composable(BottomNavItem.OrderList.route) {
+                RentalOrderList(navController = navController)
+            }
+            composable(Constants.ORDER_ROUTE) {
+                RentalOrder(navController = navController)
             }
 
             composable(BottomNavItem.ProdList.route) {

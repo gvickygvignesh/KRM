@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -29,14 +30,14 @@ class InventoryViewModel @Inject constructor(private val inventoryRepository: In
 
     private var job: Job? = null
 
-    private val _prodState = mutableStateOf(ProdState())
-    val prodState: State<ProdState> = _prodState
+    private val _prodState = MutableStateFlow(ProdState())
+    val prodState = _prodState
 
     private val _addItemState = mutableStateOf(AddFireStoreState())
     val addItemState: State<AddFireStoreState> = _addItemState
 
-    private val _invState = mutableStateOf(InventoryState())
-    val invState: State<InventoryState> = _invState
+    private val _invState = MutableStateFlow(InventoryState())
+    val invState = _invState.asStateFlow()
 
     private val _selectedItem = MutableStateFlow<Product?>(null)
     val selectedItem: StateFlow<Product?> = _selectedItem
@@ -52,25 +53,19 @@ class InventoryViewModel @Inject constructor(private val inventoryRepository: In
         job = viewModelScope.launch {
             inventoryRepository.getProducts().onEach { result ->
                 when (result) {
-                    is Resource.Error ->
-                        _prodState.value = ProdState(
-                            isLoading = false,
-                            internet = false,
-                            success = ERROR_HTTP
-                        )
+                    is Resource.Error -> _prodState.value = ProdState(
+                        isLoading = false, internet = false, success = ERROR_HTTP
+                    )
 
                     is Resource.Internet -> {
                         _prodState.value = ProdState(
-                            isLoading = false,
-                            internet = true,
-                            success = ERROR_INTERNET
+                            isLoading = false, internet = true, success = ERROR_INTERNET
                         )
                     }
 
                     is Resource.Loading -> {
                         _prodState.value = ProdState(
-                            isLoading = true,
-                            internet = false
+                            isLoading = true, internet = false
                         )
                     }
 
@@ -87,32 +82,26 @@ class InventoryViewModel @Inject constructor(private val inventoryRepository: In
         }
     }
 
-    fun addProduct(name: String, desc: String, price: Double, timestamp: Timestamp) {
+    fun addProduct(name: String, desc: String, price: Long, timestamp: Timestamp) {
         job?.cancel()
         job = viewModelScope.launch(Dispatchers.IO) {
             val newItem =
                 Product(name = name, description = desc, rentalPrice = price, timestamp = timestamp)
             inventoryRepository.addProduct(newItem).collectLatest { result ->
                 when (result) {
-                    is Resource.Error ->
-                        _addItemState.value = AddFireStoreState(
-                            isLoading = false,
-                            internet = false,
-                            success = ERROR_HTTP
-                        )
+                    is Resource.Error -> _addItemState.value = AddFireStoreState(
+                        isLoading = false, internet = false, success = ERROR_HTTP
+                    )
 
                     is Resource.Internet -> {
                         _addItemState.value = AddFireStoreState(
-                            isLoading = false,
-                            internet = true,
-                            success = ERROR_INTERNET
+                            isLoading = false, internet = true, success = ERROR_INTERNET
                         )
                     }
 
                     is Resource.Loading -> {
                         _addItemState.value = AddFireStoreState(
-                            isLoading = true,
-                            internet = false
+                            isLoading = true, internet = false
                         )
                     }
 
@@ -135,25 +124,19 @@ class InventoryViewModel @Inject constructor(private val inventoryRepository: In
         job = viewModelScope.launch(Dispatchers.IO) {
             inventoryRepository.updateProduct(item).collectLatest { result ->
                 when (result) {
-                    is Resource.Error ->
-                        _addItemState.value = AddFireStoreState(
-                            isLoading = false,
-                            internet = false,
-                            success = ERROR_HTTP
-                        )
+                    is Resource.Error -> _addItemState.value = AddFireStoreState(
+                        isLoading = false, internet = false, success = ERROR_HTTP
+                    )
 
                     is Resource.Internet -> {
                         _addItemState.value = AddFireStoreState(
-                            isLoading = false,
-                            internet = true,
-                            success = ERROR_INTERNET
+                            isLoading = false, internet = true, success = ERROR_INTERNET
                         )
                     }
 
                     is Resource.Loading -> {
                         _addItemState.value = AddFireStoreState(
-                            isLoading = true,
-                            internet = false
+                            isLoading = true, internet = false
                         )
                     }
 
@@ -175,25 +158,19 @@ class InventoryViewModel @Inject constructor(private val inventoryRepository: In
         job = viewModelScope.launch(Dispatchers.IO) {
             inventoryRepository.deleteProduct(item.id).collectLatest { result ->
                 when (result) {
-                    is Resource.Error ->
-                        _addItemState.value = AddFireStoreState(
-                            isLoading = false,
-                            internet = false,
-                            success = ERROR_HTTP
-                        )
+                    is Resource.Error -> _addItemState.value = AddFireStoreState(
+                        isLoading = false, internet = false, success = ERROR_HTTP
+                    )
 
                     is Resource.Internet -> {
                         _addItemState.value = AddFireStoreState(
-                            isLoading = false,
-                            internet = true,
-                            success = ERROR_INTERNET
+                            isLoading = false, internet = true, success = ERROR_INTERNET
                         )
                     }
 
                     is Resource.Loading -> {
                         _addItemState.value = AddFireStoreState(
-                            isLoading = true,
-                            internet = false
+                            isLoading = true, internet = false
                         )
                     }
 
@@ -223,25 +200,19 @@ class InventoryViewModel @Inject constructor(private val inventoryRepository: In
         job = viewModelScope.launch {
             inventoryRepository.getInvItems().onEach { result ->
                 when (result) {
-                    is Resource.Error ->
-                        _invState.value = InventoryState(
-                            isLoading = false,
-                            internet = false,
-                            success = ERROR_HTTP
-                        )
+                    is Resource.Error -> _invState.value = InventoryState(
+                        isLoading = false, internet = false, success = ERROR_HTTP
+                    )
 
                     is Resource.Internet -> {
                         _invState.value = InventoryState(
-                            isLoading = false,
-                            internet = true,
-                            success = ERROR_INTERNET
+                            isLoading = false, internet = true, success = ERROR_INTERNET
                         )
                     }
 
                     is Resource.Loading -> {
                         _invState.value = InventoryState(
-                            isLoading = true,
-                            internet = false
+                            isLoading = true, internet = false
                         )
                     }
 
@@ -269,29 +240,67 @@ class InventoryViewModel @Inject constructor(private val inventoryRepository: In
     ) {
         job?.cancel()
         job = viewModelScope.launch(Dispatchers.IO) {
-            val newItem =
-                InventoryItem(id, name, totCount, rentedCount, avlCount, damagedCount, timestamp)
+            val newItem = InventoryItem(
+                prodId = id,
+                prodName = name,
+                totCount = totCount,
+                rentedCount = rentedCount,
+                avlCount = avlCount,
+                damagedCount = damagedCount,
+                timestamp = timestamp
+            )
             inventoryRepository.addInventoryItem(newItem).collectLatest { result ->
                 when (result) {
-                    is Resource.Error ->
-                        _addItemState.value = AddFireStoreState(
-                            isLoading = false,
-                            internet = false,
-                            success = ERROR_HTTP
-                        )
+                    is Resource.Error -> _addItemState.value = AddFireStoreState(
+                        isLoading = false, internet = false, success = ERROR_HTTP
+                    )
 
                     is Resource.Internet -> {
                         _addItemState.value = AddFireStoreState(
-                            isLoading = false,
-                            internet = true,
-                            success = ERROR_INTERNET
+                            isLoading = false, internet = true, success = ERROR_INTERNET
                         )
                     }
 
                     is Resource.Loading -> {
                         _addItemState.value = AddFireStoreState(
-                            isLoading = true,
-                            internet = false
+                            isLoading = true, internet = false
+                        )
+                    }
+
+                    is Resource.Success -> {
+                        _addItemState.value = AddFireStoreState(
+                            isLoading = false,
+                            internet = false,
+                            success = SUCCESS,
+                            data = result.data!!
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun deleteInventoryItem(
+        inventoryItem: InventoryItem
+    ) {
+        job?.cancel()
+        job = viewModelScope.launch(Dispatchers.IO) {
+
+            inventoryRepository.deleteInventoryItem(inventoryItem).collectLatest { result ->
+                when (result) {
+                    is Resource.Error -> _addItemState.value = AddFireStoreState(
+                        isLoading = false, internet = false, success = ERROR_HTTP
+                    )
+
+                    is Resource.Internet -> {
+                        _addItemState.value = AddFireStoreState(
+                            isLoading = false, internet = true, success = ERROR_INTERNET
+                        )
+                    }
+
+                    is Resource.Loading -> {
+                        _addItemState.value = AddFireStoreState(
+                            isLoading = true, internet = false
                         )
                     }
 

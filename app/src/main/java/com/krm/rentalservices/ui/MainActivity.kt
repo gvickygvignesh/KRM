@@ -10,6 +10,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,6 +19,7 @@ import com.krm.rentalservices.BottomNavItem
 import com.krm.rentalservices.BottomNavigationBar
 import com.krm.rentalservices.Constants
 import com.krm.rentalservices.viewmodel.InventoryViewModel
+import com.krm.rentalservices.viewmodel.RentalOrderViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -47,6 +49,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(inventoryViewModel: InventoryViewModel) {
     val navController = rememberNavController()
+    val rentalOrderViewModel: RentalOrderViewModel = hiltViewModel()
 
     Scaffold(bottomBar = { BottomNavigationBar(navController) }) { innerPadding ->
         NavHost(
@@ -58,7 +61,32 @@ fun MainScreen(inventoryViewModel: InventoryViewModel) {
                 RentalOrderList(navController = navController)
             }
             composable(Constants.ORDER_ROUTE) {
-                RentalOrder(navController = navController)
+                RentalOrder(
+                    navController = navController,
+                    rentalOrderViewModel = rentalOrderViewModel
+                )
+            }
+            composable(Constants.ADD_ITEM_RENTAL_ORDER_ROUTE) {
+                AddItemRentalOrderOverlay(
+                    navController = navController, onDismiss = {
+                        navController.popBackStack()
+                    },
+                    rentalOrderViewModel = rentalOrderViewModel
+                )
+            }
+
+            composable(Constants.ADD_CHARGES_ROUTE) {
+                AddCharges(
+                    rentalOrderViewModel = rentalOrderViewModel,
+                    navController = navController
+                )
+            }
+
+            composable(Constants.ADD_PAYMENT_ROUTE) {
+                AddPayment(
+                    rentalOrderViewModel = rentalOrderViewModel,
+                    navController = navController
+                )
             }
 
             composable(BottomNavItem.ProdList.route) {

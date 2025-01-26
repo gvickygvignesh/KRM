@@ -1,7 +1,11 @@
 package com.krm.rentalservices.viewmodel
 
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.Timestamp
+import com.krm.rentalservices.AddFireStoreState
 import com.krm.rentalservices.CustomerState
 import com.krm.rentalservices.InventoryState
 import com.krm.rentalservices.ProdState
@@ -9,16 +13,23 @@ import com.krm.rentalservices.RentalOrderState
 import com.krm.rentalservices.Resource
 import com.krm.rentalservices.model.Customer
 import com.krm.rentalservices.model.OrderItem
+import com.krm.rentalservices.model.OtherCharges
+import com.krm.rentalservices.model.Payment
 import com.krm.rentalservices.model.Product
+import com.krm.rentalservices.model.RentalOrder
 import com.krm.rentalservices.repository.CustomersRepository
 import com.krm.rentalservices.repository.InventoryRepository
 import com.krm.rentalservices.repository.RentalOrdersRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.util.Date
 import javax.inject.Inject
 
 /*@HiltViewModel
@@ -35,6 +46,7 @@ class RentalOrderViewModel @Inject constructor(
     private val customersRepository: CustomersRepository,
     private val rentalOrdersRepository: RentalOrdersRepository
 ) : ViewModel() {
+    private var job: Job? = null
 
     private val _customerState = MutableStateFlow(CustomerState())
     val customerState: StateFlow<CustomerState> = _customerState
@@ -54,6 +66,9 @@ class RentalOrderViewModel @Inject constructor(
     private val _totalAmount = MutableStateFlow(0L)
     val totalAmount: StateFlow<Long> = _totalAmount
 
+    private val _otherChargesTotalAmount = MutableStateFlow(0L)
+    val otherChargesTotalAmount: StateFlow<Long> = _otherChargesTotalAmount
+
     private val _paidAmount = MutableStateFlow(0L)
     val paidAmount: StateFlow<Long> = _paidAmount
 
@@ -62,6 +77,18 @@ class RentalOrderViewModel @Inject constructor(
 
     private val _selectedProduct = MutableStateFlow<Product?>(null)
     val selectedProduct: StateFlow<Product?> = _selectedProduct
+
+    private val _selectedPayMode = MutableStateFlow<String?>(null)
+    val selectedPayMode: StateFlow<String?> = _selectedPayMode
+
+    private val _paymentItems = MutableStateFlow<List<Payment>>(emptyList())
+    val paymentItems: StateFlow<List<Payment>> = _paymentItems
+
+    private val _otherChargeItems = MutableStateFlow<List<OtherCharges>>(emptyList())
+    val otherChargeItems: StateFlow<List<OtherCharges>> = _otherChargeItems
+
+    private val _addRentalOrderState = mutableStateOf(AddFireStoreState())
+    val addRentalOrderState: State<AddFireStoreState> = _addRentalOrderState
 
     // Fetch data for customers and inventory
     init {
@@ -196,6 +223,14 @@ class RentalOrderViewModel @Inject constructor(
         }
     }
 
+    fun selectCustomer(customer: Customer) {
+        _selectedCustomer.value = customer
+    }
+
+    fun selectProduct(product: Product) {
+        _selectedProduct.value = product
+    }
+
     // Add product to order items
     fun addOrderItem(qty: Int, days: Int, price: Long) {
         val product = _selectedProduct.value ?: return
@@ -211,26 +246,87 @@ class RentalOrderViewModel @Inject constructor(
 
             // Update total amount
             val newTotalAmount = _orderItems.value.sumOf { it.quantity * it.days * it.price }
-            _totalAmount.value = newTotalAmount
+            _totalAmount.value = newTotalAmount + _otherChargeItems.value.sumOf { it.amount }
         }
     }
 
+    fun addPaymentItem(dateTime: String, payMode: String, remarks: String, amount: Long) {
+        val newPayment = Payment(dateTime, payMode, amount, remarks)
+        _paymentItems.value += newPayment
+        _paidAmount.value = _paymentItems.value.sumOf { it.amount }
+    }
+
+    fun addOtherChargesItem(otherChargeType: String, remarks: String, amount: Long) {
+        val newCharge = OtherCharges(otherChargeType, amount, remarks)
+        _otherChargeItems.value += newCharge
+
+        val otherChargesTotal = _otherChargeItems.value.sumOf { it.amount }
+        _otherChargesTotalAmount.value = otherChargesTotal
+
+        val currOrderValueTotal = _orderItems.value.sumOf { it.quantity * it.days * it.price }
+        _totalAmount.value = otherChargesTotal + currOrderValueTotal
+    }
+
     // Save rental order
-    fun saveRentalOrder() {
+    fun saveRentalOrder(orderStatus: String, isReturnOrder: Boolean) {
+        job?.cancel()
+        job = viewModelScope.launch(Dispatchers.IO) {
 
-    }
 
-    // Update paid amount
-    fun updatePaidAmount(amount: Long) {
-        _paidAmount.value = amount
-    }
+            var newOrder = RentalOrder(
+                customerId = _selectedCustomer.value?.id ?: "",
+                customerName = _selectedCustomer.value?.name ?: "",
+                orderDate = Date(),
+                orderStatus = orderStatus,
+                orderItemList = orderItems.value,
+                paymentList = paymentItems.value,
+                otherChargesList = otherChargeItems.value,
+                totalAmt = totalAmount.value,
+                paidAmt = paidAmount.value,
+                balanceAmt = totalAmount.value - paidAmount.value,
+                returnOrderDate = if (isReturnOrder) {
+                    Date()
+                } else null,
+                timestamp = Timestamp.now(),
+            )
 
-    fun selectCustomer(customer: Customer) {
-        _selectedCustomer.value = customer
-    }
+            rentalOrdersRepository.createRentalOrderWithInventoryUpdate(newOrder)
 
-    fun selectProduct(product: Product) {
-        _selectedProduct.value = product
+            rentalOrdersRepository.addRentalOrder(rentalOrder = newOrder).collectLatest { result ->
+                when (result) {
+                    is Resource.Error ->
+                        _addRentalOrderState.value = AddFireStoreState(
+                            isLoading = false,
+                            internet = false,
+                            success = ERROR_HTTP
+                        )
+
+                    is Resource.Internet -> {
+                        _addRentalOrderState.value = AddFireStoreState(
+                            isLoading = false,
+                            internet = true,
+                            success = ERROR_INTERNET
+                        )
+                    }
+
+                    is Resource.Loading -> {
+                        _addRentalOrderState.value = AddFireStoreState(
+                            isLoading = true,
+                            internet = false
+                        )
+                    }
+
+                    is Resource.Success -> {
+                        _addRentalOrderState.value = AddFireStoreState(
+                            isLoading = false,
+                            internet = false,
+                            success = SUCCESS,
+                            data = result.data!!
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

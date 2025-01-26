@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "com.krm.rentalservices"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -59,13 +59,14 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
-
     implementation(libs.androidx.activity.compose)
-
-    implementation(libs.androidx.ui)
+    implementation(libs.androidx.activity.constraint.compose)
+//    implementation(libs.androidx.ui)
 
     // Hilt for Dependency Injection
+    implementation(libs.androidx.ui)
     implementation(libs.hilt.android)
+//    implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.foundation.android)
     implementation(libs.androidx.material3.android)
     implementation(libs.androidx.navigation.compose)
@@ -73,6 +74,8 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview.android)
     debugImplementation(libs.androidx.ui.tooling)
     ksp(libs.hilt.android.compiler)
+
+//    implementation(platform(libs.androidx.compose.bom))
 
     // Coroutines and Flow
     implementation(libs.kotlinx.coroutines.core)
@@ -82,7 +85,7 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.database.ktx)
-    implementation (libs.firebase.firestore)
+    implementation(libs.firebase.firestore)
 
 
     testImplementation(libs.junit)

@@ -9,7 +9,6 @@ import com.krm.rentalservices.AddFireStoreState
 import com.krm.rentalservices.CustomerState
 import com.krm.rentalservices.Resource
 import com.krm.rentalservices.model.Customer
-import com.krm.rentalservices.model.OrderItem
 import com.krm.rentalservices.repository.CustomersRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -33,8 +32,8 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
     private val _customerState = MutableStateFlow(CustomerState())
     val customerState = _customerState.asStateFlow()
 
-    private val _addCustState = mutableStateOf(AddFireStoreState())
-    val addCustState: State<AddFireStoreState> = _addCustState
+    private val _addCustomerState = mutableStateOf(AddFireStoreState())
+    val addCustomerState: State<AddFireStoreState> = _addCustomerState
 
     private val _selectedItem = MutableStateFlow<Customer?>(null)
     val selectedItem: StateFlow<Customer?> = _selectedItem
@@ -113,14 +112,14 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
             customersRepository.addCustomer(newCustomer).collectLatest { result ->
                 when (result) {
                     is Resource.Error ->
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = false,
                             internet = false,
                             success = ERROR_HTTP
                         )
 
                     is Resource.Internet -> {
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = false,
                             internet = true,
                             success = ERROR_INTERNET
@@ -128,14 +127,14 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
                     }
 
                     is Resource.Loading -> {
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = true,
                             internet = false
                         )
                     }
 
                     is Resource.Success -> {
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = false,
                             internet = false,
                             success = SUCCESS,
@@ -161,14 +160,14 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
             customersRepository.updateCustomer(item).collectLatest { result ->
                 when (result) {
                     is Resource.Error ->
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = false,
                             internet = false,
                             success = ERROR_HTTP
                         )
 
                     is Resource.Internet -> {
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = false,
                             internet = true,
                             success = ERROR_INTERNET
@@ -176,14 +175,14 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
                     }
 
                     is Resource.Loading -> {
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = true,
                             internet = false
                         )
                     }
 
                     is Resource.Success -> {
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = false,
                             internet = false,
                             success = SUCCESS,
@@ -203,14 +202,14 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
             customersRepository.deleteCustomer(item.id).collectLatest { result ->
                 when (result) {
                     is Resource.Error ->
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = false,
                             internet = false,
                             success = ERROR_HTTP
                         )
 
                     is Resource.Internet -> {
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = false,
                             internet = true,
                             success = ERROR_INTERNET
@@ -218,14 +217,14 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
                     }
 
                     is Resource.Loading -> {
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = true,
                             internet = false
                         )
                     }
 
                     is Resource.Success -> {
-                        _addCustState.value = AddFireStoreState(
+                        _addCustomerState.value = AddFireStoreState(
                             isLoading = false,
                             internet = false,
                             success = SUCCESS,

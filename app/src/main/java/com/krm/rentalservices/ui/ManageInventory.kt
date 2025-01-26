@@ -328,7 +328,7 @@ fun ProductSpinner(
             value = selectedItem?.name ?: "Select", // Show default text
             onValueChange = {},
             readOnly = true, // Makes the field uneditable
-            label = { Text("Product") },
+            label = { Text("Select Product") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = modifier
 //            /*modifier = Modifier

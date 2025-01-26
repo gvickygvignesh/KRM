@@ -9,14 +9,12 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.krm.rentalservices.Resource
 import com.krm.rentalservices.model.Customer
-import com.krm.rentalservices.model.Product
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import javax.inject.Inject
 
 class CustomersRepository @Inject constructor(private val firebaseFirestore: FirebaseFirestore) {
-    private val FB_CUST_REF = "customers"
     private val TAG: String = "KRM tag"
     private val fbFTDB = firebaseFirestore.collection(FB_CUST_REF)
 
@@ -69,7 +67,7 @@ class CustomersRepository @Inject constructor(private val firebaseFirestore: Fir
     fun addCustomer(customer: Customer): Flow<Resource<String>> = callbackFlow {
         trySend(Resource.Loading())
         val db = Firebase.firestore
-        val newDocRef = db.collection(FB_CUST_REF).document()
+        val newDocRef = db.collection(Companion.FB_CUST_REF).document()
         customer.id = newDocRef.id
 
         newDocRef.set(customer).addOnSuccessListener {
@@ -120,5 +118,9 @@ class CustomersRepository @Inject constructor(private val firebaseFirestore: Fir
 //                _inventoryState.value = Resource.Error(it.localizedMessage ?: "Unknown Error")
         }
         awaitClose()
+    }
+
+    companion object {
+        private const val FB_CUST_REF = "customers"
     }
 }

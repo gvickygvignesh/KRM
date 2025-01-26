@@ -55,7 +55,7 @@ fun AddCustomer(
     var formIsValid by remember { mutableStateOf(true) }
     var validationMessage by remember { mutableStateOf("") }
 
-    val state = viewModel.addCustState.value
+    val state = viewModel.addCustomerState.value
 
     when (state.success) {
         SUCCESS, ERROR_INTERNET -> {

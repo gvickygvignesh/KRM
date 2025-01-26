@@ -12,4 +12,7 @@ object Constants {
     const val ADD_PRODUCT = "add_prod"
 //    const val ORDER_LIST_ROUTE = "order_list"
     const val ORDER_ROUTE = "order"
+    const val ADD_ITEM_RENTAL_ORDER_ROUTE = "add_item_rental_order"
+    const val ADD_PAYMENT_ROUTE = "add_payment"
+    const val ADD_CHARGES_ROUTE = "add_charges"
 }

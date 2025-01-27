@@ -57,12 +57,18 @@ fun AddCustomer(
 
     val state = viewModel.addCustomerState.value
 
-    when (state.success) {
-        SUCCESS, ERROR_INTERNET -> {
-            Toast.makeText(
-                LocalContext.current, state.data + " Customer added successfully", Toast.LENGTH_LONG
-            ).show()
+    if (!state.isEventHandled) {
+        when (state.success) {
+            SUCCESS, ERROR_INTERNET -> {
+                Toast.makeText(
+                    LocalContext.current,
+                    state.data + " Customer added successfully",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
+
+        viewModel.markEventHandled()
     }
 
 //    navController.popBackStack()

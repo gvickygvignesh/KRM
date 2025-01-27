@@ -16,8 +16,8 @@ import kotlinx.coroutines.flow.callbackFlow
 import javax.inject.Inject
 
 
-private const val FIREBASE_ITEMS_REF = "items"
-private const val FIREBASE_INVENTORY_REF = "inventory"
+const val FIREBASE_ITEMS_REF = "items"
+const val FIREBASE_INVENTORY_REF = "inventory"
 
 class InventoryRepository @Inject constructor(private val firebaseFirestore: FirebaseFirestore) {
     private val TAG: String = "KRM tag"

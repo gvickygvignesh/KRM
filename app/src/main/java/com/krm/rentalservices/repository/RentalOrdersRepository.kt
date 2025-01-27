@@ -2,6 +2,7 @@ package com.krm.rentalservices.repository
 
 import android.util.Log
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
 import com.krm.rentalservices.Resource
@@ -16,9 +17,8 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class RentalOrdersRepository @Inject constructor(firebaseFireStore: FirebaseFirestore) {
-    private val TAG: String = "KRM tag"
+    private val TAG: String = "Sothanai"
     private val fbFtDb = firebaseFireStore.collection(FB_RENTAL_ORDER_REF)
-
 
     /*fun fetchRentalOrders(): Flow<Resource<List<RentalOrder>>> = callbackFlow {
         trySend(Resource.Loading())
@@ -85,68 +85,86 @@ class RentalOrdersRepository @Inject constructor(firebaseFireStore: FirebaseFire
     }
 
 
-    suspend fun createRentalOrderWithInventoryUpdate(rentalOrder: RentalOrder) {
-        val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    fun createRentalOrderWithInventoryUpdate(rentalOrder: RentalOrder): Flow<Resource<String>> =
+        callbackFlow {
+            trySend(Resource.Loading())
+            val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
-        try {
-            db.runTransaction { transaction ->
-                rentalOrder.orderItemList.forEach { orderItem ->
-                    // Query InventoryItems collection and fetch the document snapshot
-                    val inventoryQuerySnapshot = db.collection("InventoryItems")
+            try {
+                // Preload inventory documents outside the transaction
+                val inventoryRefsAndData = mutableListOf<Pair<DocumentReference, InventoryItem>>()
+
+                for (orderItem in rentalOrder.orderItemList) {
+                    val querySnapshot = db.collection(FIREBASE_INVENTORY_REF)
                         .whereEqualTo("prodId", orderItem.productId)
                         .limit(1)
-                        .get() // Query is outside the transaction
+                        .get()
+                        .await()
 
+                    Log.d(TAG, "on query: ")
+                    if (querySnapshot.isEmpty) {
+                        trySend(Resource.Error("Inventory not found for productId: ${orderItem.productId}"))
+                        close(IllegalStateException("Inventory not found for productId: ${orderItem.productId}"))
+                        return@callbackFlow
+                    }
 
-                    // Assuming there's only one document, get the first document reference
-                    val document = inventoryQuerySnapshot.addOnSuccessListener() {
-                        // Check if the query returned any documents
-                        if (it.isEmpty) {
-                            throw IllegalStateException("Inventory not found for productId: ${orderItem.productId}")
-                        }
-//                        for (doc in it.documents) {
+                    Log.d(TAG, "on query: not empty")
+                    val document = querySnapshot.documents[0]
+                    val inventoryItem = document.toObject(InventoryItem::class.java)
+                        ?: throw IllegalStateException("Invalid Inventory data for productId: ${orderItem.productId}")
+                    inventoryRefsAndData.add(Pair(document.reference, inventoryItem))
+                }
 
-                        val inventoryRef = it.documents[0].reference
-                        val inventoryItem: InventoryItem =
-                            it.documents[0].toObject(InventoryItem::class.java)
-                                ?: throw IllegalStateException("Invalid Inventory data for productId: ${orderItem.productId}")
+                Log.d(TAG, "on query: count size" + inventoryRefsAndData.size)
+                // Run the transaction
+                db.runTransaction { transaction ->
+                    // Update inventory
+                    rentalOrder.orderItemList.forEach { orderItem ->
+                        val (inventoryRef, inventoryItem) = inventoryRefsAndData.first { it.second.prodId == orderItem.productId }
 
-                        // Calculate updated counts
                         val updatedAvlCount = inventoryItem.avlCount - orderItem.quantity
                         val updatedRentedCount = inventoryItem.rentedCount + orderItem.quantity
 
-                        // Ensure no negative stock
                         if (updatedAvlCount < 0) {
                             throw IllegalStateException("Insufficient stock for productId: ${orderItem.productId}")
                         }
 
-                        // Apply updates to inventory
+                        Log.d(
+                            TAG, "b4 trans" + inventoryItem.prodName +
+                                    inventoryItem.avlCount + inventoryItem.rentedCount
+                        )
+
                         transaction.update(
                             inventoryRef, mapOf(
                                 "avlCount" to updatedAvlCount,
                                 "rentedCount" to updatedRentedCount
                             )
                         )
+
+                        Log.d(
+                            TAG, "after trans" + inventoryItem.prodName +
+                                    inventoryItem.avlCount + inventoryItem.rentedCount
+                        )
                     }
-//                    }
 
-                }
+                    // Add the RentalOrder
+                    val newOrderRef = db.collection(FB_RENTAL_ORDER_REF).document()
+                    rentalOrder.orderId = newOrderRef.id
+                    transaction.set(newOrderRef, rentalOrder)
+                }.addOnSuccessListener { orderId ->
+                    Log.d(TAG, "add order success ID" + rentalOrder.orderId)
+                    trySend(Resource.Success(rentalOrder.orderId))
+                }.addOnFailureListener { e ->
+                    trySend(Resource.Error("Transaction failed: ${e.message}"))
+                    close(e)
+                } //.await() // Await transaction completion
+                awaitClose()
 
-                // Add the RentalOrder after updating inventory
-                val newOrderRef = db.collection("RentalOrders").document(rentalOrder.orderId)
-                transaction.set(newOrderRef, rentalOrder)
-
-                // Success
-                null
-            }.await() // Await transaction completion
-
-            // Log success
-            Log.d("RentalOrder", "Transaction success: Order created and inventory updated.")
-        } catch (e: Exception) {
-            // Log failure
-            Log.w("RentalOrder", "Transaction failure: ${e.message}", e)
+            } catch (e: Exception) {
+                trySend(Resource.Error("Transaction failed: ${e.message}"))
+                close(e)
+            }
         }
-    }
 
 
     fun updateCustomer(item: Customer): Flow<Resource<String>> = callbackFlow {
@@ -175,7 +193,7 @@ class RentalOrdersRepository @Inject constructor(firebaseFireStore: FirebaseFire
     }
 
 
-    fun fetchRentalOrdersFlow(): Flow<Resource<List<RentalOrder>>> = flow {
+    fun fetchRentalOrders(): Flow<Resource<List<RentalOrder>>> = flow {
         emit(Resource.Loading())
 
         try {
@@ -190,5 +208,6 @@ class RentalOrdersRepository @Inject constructor(firebaseFireStore: FirebaseFire
 
     companion object {
         private const val FB_RENTAL_ORDER_REF = "rentalOrders"
+//        const val FIREBASE_RENTAL_ORDERS_REF = "RentalOrders"
     }
 }

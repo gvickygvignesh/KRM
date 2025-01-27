@@ -78,9 +78,6 @@ class RentalOrderViewModel @Inject constructor(
     private val _selectedProduct = MutableStateFlow<Product?>(null)
     val selectedProduct: StateFlow<Product?> = _selectedProduct
 
-    private val _selectedPayMode = MutableStateFlow<String?>(null)
-    val selectedPayMode: StateFlow<String?> = _selectedPayMode
-
     private val _paymentItems = MutableStateFlow<List<Payment>>(emptyList())
     val paymentItems: StateFlow<List<Payment>> = _paymentItems
 
@@ -91,13 +88,13 @@ class RentalOrderViewModel @Inject constructor(
     val addRentalOrderState: State<AddFireStoreState> = _addRentalOrderState
 
     // Fetch data for customers and inventory
-    init {
+    /*init {
         fetchCustomers()
         fetchInventory()
         fetchProducts()
-    }
+    }*/
 
-    private fun fetchCustomers() {
+    fun fetchCustomers() {
         viewModelScope.launch {
             // Simulate API call
             _customerState.value = CustomerState(isLoading = true)
@@ -139,7 +136,7 @@ class RentalOrderViewModel @Inject constructor(
         }
     }
 
-    private fun fetchInventory() {
+    fun fetchInventory() {
         viewModelScope.launch {
             // Simulate API call
 //            _inventoryState.value = InventoryState(isLoading = true)
@@ -181,7 +178,7 @@ class RentalOrderViewModel @Inject constructor(
         }
     }
 
-    private fun fetchProducts() {
+    fun fetchProducts() {
         viewModelScope.launch {
             // Simulate API call
 //            _inventoryState.value = InventoryState(isLoading = true)
@@ -232,20 +229,27 @@ class RentalOrderViewModel @Inject constructor(
     }
 
     // Add product to order items
-    fun addOrderItem(qty: Int, days: Int, price: Long) {
+    fun addOrderItem(qty: Int, days: Int, rentalPrice: Long, amount: Long) {
         val product = _selectedProduct.value ?: return
-        val quantity = qty // Replace with quantity input field value
-        val days = days // Replace with quantity input field value
-        val price = price//_selectedProduct.value?.rentalPrice ?: 0
+        /* val quantity = qty // Replace with quantity input field value
+         val days = days // Replace with days input field value
+         val price = rentalPrice//_selectedProduct.value?.rentalPrice ?: 0*/
 
         // Check if enough stock is available
         val inventoryItem = _inventoryState.value.data.find { it.prodId == product.id }
-        if (inventoryItem != null && inventoryItem.avlCount >= quantity) {
-            val newItem = OrderItem(product.id, product.name, quantity, days, 0, price)//todo
+        if (inventoryItem != null && inventoryItem.avlCount >= qty) {
+            val newItem = OrderItem(
+                product.id,
+                product.name,
+                qty,
+                days,
+                rentalPrice = rentalPrice,
+                amount = amount
+            )//todo
             _orderItems.value += newItem
 
             // Update total amount
-            val newTotalAmount = _orderItems.value.sumOf { it.quantity * it.days * it.price }
+            val newTotalAmount = _orderItems.value.sumOf { it.quantity * it.days * it.rentalPrice }
             _totalAmount.value = newTotalAmount + _otherChargeItems.value.sumOf { it.amount }
         }
     }
@@ -263,7 +267,7 @@ class RentalOrderViewModel @Inject constructor(
         val otherChargesTotal = _otherChargeItems.value.sumOf { it.amount }
         _otherChargesTotalAmount.value = otherChargesTotal
 
-        val currOrderValueTotal = _orderItems.value.sumOf { it.quantity * it.days * it.price }
+        val currOrderValueTotal = _orderItems.value.sumOf { it.quantity * it.days * it.rentalPrice }
         _totalAmount.value = otherChargesTotal + currOrderValueTotal
     }
 
@@ -271,9 +275,7 @@ class RentalOrderViewModel @Inject constructor(
     fun saveRentalOrder(orderStatus: String, isReturnOrder: Boolean) {
         job?.cancel()
         job = viewModelScope.launch(Dispatchers.IO) {
-
-
-            var newOrder = RentalOrder(
+            val newOrder = RentalOrder(
                 customerId = _selectedCustomer.value?.id ?: "",
                 customerName = _selectedCustomer.value?.name ?: "",
                 orderDate = Date(),
@@ -290,19 +292,91 @@ class RentalOrderViewModel @Inject constructor(
                 timestamp = Timestamp.now(),
             )
 
+//            rentalOrdersRepository.createRentalOrderWithInventoryUpdate(newOrder).collectLatest { result -> }
+            /* rentalOrdersRepository.addRentalOrder(rentalOrder = newOrder).collectLatest { result -> */
             rentalOrdersRepository.createRentalOrderWithInventoryUpdate(newOrder)
+                .collectLatest { result ->
+                    when (result) {
+                        is Resource.Error ->
+                            _addRentalOrderState.value = AddFireStoreState(
+                                isLoading = false,
+                                internet = false,
+                                success = ERROR_HTTP,
+                                isEventHandled = false
+                            )
 
-            rentalOrdersRepository.addRentalOrder(rentalOrder = newOrder).collectLatest { result ->
+                        is Resource.Internet -> {
+                            _addRentalOrderState.value = AddFireStoreState(
+                                isLoading = false,
+                                internet = true,
+                                success = ERROR_INTERNET,
+                                isEventHandled = false
+                            )
+                        }
+
+                        is Resource.Loading -> {
+                            _addRentalOrderState.value = AddFireStoreState(
+                                isLoading = true,
+                                internet = false
+                            )
+                        }
+
+                        is Resource.Success -> {
+                            _addRentalOrderState.value = AddFireStoreState(
+                                isLoading = false,
+                                internet = false,
+                                success = SUCCESS,
+                                data = result.data!!,
+                                isEventHandled = false
+                            )
+                        }
+
+                    }
+                }
+        }
+    }
+
+    fun markEventHandled() {
+        _addRentalOrderState.value = _addRentalOrderState.value.copy(isEventHandled = true)
+    }
+
+
+    fun clearData() {
+        // Reset state flows to their default values
+//        _customerState.value = CustomerState()
+        _inventoryState.value = InventoryState()
+//        _productState.value = ProdState()
+        _orderItems.value = emptyList()
+        _rentalOrderState.value = RentalOrderState()
+        _totalAmount.value = 0L
+        _otherChargesTotalAmount.value = 0L
+        _paidAmount.value = 0L
+        _selectedCustomer.value = null
+        _selectedProduct.value = null
+        _paymentItems.value = emptyList()
+        _otherChargeItems.value = emptyList()
+
+        // Reset AddFireStoreState
+        _addRentalOrderState.value = AddFireStoreState()
+    }
+
+
+    // Flow to collect Rental order items
+    fun fetchRentalOrders() {
+        job?.cancel()
+        job = viewModelScope.launch(Dispatchers.IO) {
+//            val itemsFlow: Flow<Resource<List<InventoryItem>>> =
+            rentalOrdersRepository.fetchRentalOrders().onEach { result ->
                 when (result) {
                     is Resource.Error ->
-                        _addRentalOrderState.value = AddFireStoreState(
+                        _rentalOrderState.value = RentalOrderState(
                             isLoading = false,
                             internet = false,
                             success = ERROR_HTTP
                         )
 
                     is Resource.Internet -> {
-                        _addRentalOrderState.value = AddFireStoreState(
+                        _rentalOrderState.value = RentalOrderState(
                             isLoading = false,
                             internet = true,
                             success = ERROR_INTERNET
@@ -310,14 +384,14 @@ class RentalOrderViewModel @Inject constructor(
                     }
 
                     is Resource.Loading -> {
-                        _addRentalOrderState.value = AddFireStoreState(
+                        _rentalOrderState.value = RentalOrderState(
                             isLoading = true,
                             internet = false
                         )
                     }
 
                     is Resource.Success -> {
-                        _addRentalOrderState.value = AddFireStoreState(
+                        _rentalOrderState.value = RentalOrderState(
                             isLoading = false,
                             internet = false,
                             success = SUCCESS,
@@ -325,9 +399,10 @@ class RentalOrderViewModel @Inject constructor(
                         )
                     }
                 }
-            }
+            }.launchIn(viewModelScope)
         }
     }
+
 }
 
 

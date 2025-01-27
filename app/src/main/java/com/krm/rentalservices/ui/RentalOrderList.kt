@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -50,6 +51,11 @@ fun RentalOrderList(
     //    val items = viewModel.itemsFlow.collectAsState(initial = emptyList()).value // Collect items
     val state = viewModel.rentalOrderState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
+
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchRentalOrders()
+    }
 
     when (state.value.success) {
         SUCCESS, ERROR_INTERNET -> {
@@ -132,19 +138,19 @@ fun RentalOrderCard(rentalOrder: RentalOrder, onEdit: () -> Unit, onDelete: () -
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "Order date: ${rentalOrder.orderDate}",
+                text = "Order date : ${rentalOrder.orderDate}",
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "Total amount: ${rentalOrder.totalAmt}",
+                text = "Total amount: ₹ ${rentalOrder.totalAmt}",
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
-                text = "Balance amount: ${rentalOrder.balanceAmt}",
+                text = "Balance amount: ₹ ${rentalOrder.balanceAmt}",
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            // Edit and Delete Icons
+            /*// Edit and Delete Icons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -165,7 +171,7 @@ fun RentalOrderCard(rentalOrder: RentalOrder, onEdit: () -> Unit, onDelete: () -
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
-            }
+            }*/
         }
     }
 }

@@ -43,7 +43,7 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
     }
 
     // Flow to collect inventory items
-    fun fetchCustomers() {
+    private fun fetchCustomers() {
         job?.cancel()
         job = viewModelScope.launch(Dispatchers.IO) {
 //            val itemsFlow: Flow<Resource<List<InventoryItem>>> =
@@ -97,7 +97,6 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
     ) {
         job?.cancel()
         job = viewModelScope.launch(Dispatchers.IO) {
-
             val newCustomer = Customer(
                 name = name,
                 type = type,
@@ -108,21 +107,24 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
                 idPhoto = idPhoto,
                 timeStamp = timestamp
             )
-//            viewModelScope.launch {
+
             customersRepository.addCustomer(newCustomer).collectLatest { result ->
                 when (result) {
                     is Resource.Error ->
                         _addCustomerState.value = AddFireStoreState(
                             isLoading = false,
                             internet = false,
-                            success = ERROR_HTTP
+                            success = ERROR_HTTP,
+                            isEventHandled = false
                         )
 
                     is Resource.Internet -> {
                         _addCustomerState.value = AddFireStoreState(
                             isLoading = false,
                             internet = true,
-                            success = ERROR_INTERNET
+                            success = ERROR_INTERNET,
+                            isEventHandled = false
+
                         )
                     }
 
@@ -138,13 +140,13 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
                             isLoading = false,
                             internet = false,
                             success = SUCCESS,
-                            data = result.data!!
+                            data = result.data!!,
+                            isEventHandled = false
                         )
                     }
                 }
 
             }
-//            }
         }
     }
 
@@ -242,6 +244,10 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
 
     fun clearSelectedItem() {
         _selectedItem.value = null
+    }
+
+    fun markEventHandled() {
+        _addCustomerState.value = _addCustomerState.value.copy(isEventHandled = true)
     }
 }
 

@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.krm.rentalservices.viewmodel.RentalOrderViewModel
 
@@ -40,9 +39,9 @@ fun AddItemRentalOrderOverlay(
     val productState by rentalOrderViewModel.prodState.collectAsState()
     val selectedProduct = rentalOrderViewModel.selectedProduct.collectAsState().value
 
-    var price by remember { mutableStateOf(selectedProduct?.rentalPrice?.toString() ?: "0") }
-    var quantity by remember { mutableStateOf("0") }
-    var days by remember { mutableStateOf("0") }
+    var rentalPrice by remember { mutableStateOf(selectedProduct?.rentalPrice?.toString() ?: "") }
+    var quantity by remember { mutableStateOf("") }
+    var days by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -72,7 +71,7 @@ fun AddItemRentalOrderOverlay(
                     selectedProduct = selectedProduct,
                     onProductSelected = {
                         rentalOrderViewModel.selectProduct(it)
-                        price = it.rentalPrice.toString()
+                        rentalPrice = it.rentalPrice.toString()
                     },
                     modifier = Modifier.weight(1f)
                 )
@@ -94,25 +93,27 @@ fun AddItemRentalOrderOverlay(
                 )
 
                 OutlinedTextField(
-                    value = price,
-                    onValueChange = { price = it },
+                    value = rentalPrice,
+                    onValueChange = { rentalPrice = it },
                     label = { Text("Rental Price") },
                     keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
 //                    modifier = Modifier.weight(0.6f)
                 )
 
                 Row(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .padding(10.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly,
 
-                ) {
+                    ) {
                     Button(
                         onClick = {
                             rentalOrderViewModel.addOrderItem(
                                 qty = quantity.toInt(),
-                                days = quantity.toInt(),
-                                price = price.toLong()
+                                days = days.toInt(),
+                                rentalPrice = rentalPrice.toLong(),
+                                amount = quantity.toInt() * days.toInt() * rentalPrice.toLong()
                             )
                             navController.popBackStack()
                         }

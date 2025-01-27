@@ -1,5 +1,6 @@
 package com.krm.rentalservices.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,8 +45,10 @@ import androidx.navigation.NavController
 import com.krm.rentalservices.Constants
 import com.krm.rentalservices.model.Customer
 import com.krm.rentalservices.viewmodel.CustomersViewModel
+import com.krm.rentalservices.viewmodel.ERROR_INTERNET
 import com.krm.rentalservices.viewmodel.InventoryViewModel
 import com.krm.rentalservices.viewmodel.RentalOrderViewModel
+import com.krm.rentalservices.viewmodel.SUCCESS
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,6 +71,39 @@ fun RentalOrder(
 
     val selectedCustomer = rentalOrderViewModel.selectedCustomer.collectAsState().value
     val selectedProduct = rentalOrderViewModel.selectedProduct.collectAsState().value
+
+    val state = rentalOrderViewModel.addRentalOrderState.value
+
+    LaunchedEffect(Unit) {
+        rentalOrderViewModel.fetchCustomers()
+        rentalOrderViewModel.fetchInventory()
+        rentalOrderViewModel.fetchProducts()
+    }
+
+    if (!state.isEventHandled) {
+        when (state.success) {
+            SUCCESS -> { //, ERROR_INTERNET
+                Toast.makeText(
+                    LocalContext.current,
+                    state.data + " Order placed successfully",
+                    Toast.LENGTH_LONG
+                ).show()
+
+                rentalOrderViewModel.clearData()
+                rentalOrderViewModel.markEventHandled()
+                rentalOrderViewModel.fetchInventory()
+            }
+
+            ERROR_INTERNET -> {
+                Toast.makeText(
+                    LocalContext.current,
+                    state.data + " No internet connection",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+
+    }
 
     Scaffold(
         /*floatingActionButton = {
@@ -161,9 +199,9 @@ fun RentalOrder(
                             TableCell(item.productName, Modifier.weight(2f))
                             TableCell(item.quantity.toString(), Modifier.weight(0.8f))
                             TableCell(item.days.toString(), Modifier.weight(0.8f))
-                            TableAmtCell("₹${item.price}", Modifier.weight(1f))
+                            TableAmtCell("₹${item.rentalPrice}", Modifier.weight(1f))
                             TableAmtCell(
-                                "₹${item.price * item.days * item.quantity}",
+                                "₹${item.rentalPrice * item.days * item.quantity}",
                                 Modifier.weight(1.5f)
                             )
                         }
@@ -248,6 +286,7 @@ fun RentalOrder(
                 Button(
                     onClick = {
 //                        navController.navigate(Constants.ADD_PAYMENT_ROUTE)
+                        rentalOrderViewModel.saveRentalOrder("open", false)
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -393,6 +432,10 @@ fun TableAmtCell(text: String, modifier: Modifier) {
         fontSize = 14.sp,
         textAlign = TextAlign.Right
     )
+}
+
+fun clearStates() {
+
 }
 
 

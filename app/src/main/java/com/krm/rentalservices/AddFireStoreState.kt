@@ -5,5 +5,6 @@ data class AddFireStoreState(
     var success: Int = 0,
     var data: String = "",
     var error: String = "",
-    var internet: Boolean = false
+    var internet: Boolean = false,
+    val isEventHandled: Boolean = false // Event flag
 )

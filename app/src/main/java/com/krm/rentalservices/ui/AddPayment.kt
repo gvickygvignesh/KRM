@@ -49,7 +49,7 @@ fun AddPayment(
     var validationMessage by remember { mutableStateOf("") }
 
     val paymentModeList: List<String> = listOf("Cash", "GPay")
-    val orderItems by rentalOrderViewModel.orderItems.collectAsState()
+    val orderItems by rentalOrderViewModel.orderItemsDTO.collectAsState()
     val paymentItems by rentalOrderViewModel.paymentItems.collectAsState()
 
     Column(

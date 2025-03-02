@@ -9,10 +9,18 @@ object Constants {
 
     const val MANAGE_INV_ROUTE = "manage_inv"
     const val ADD_CUSTOMER_ROUTE = "add_customer"
+    const val CHOOSE_CUSTOMER_ROUTE = "choose_customer"
     const val ADD_PRODUCT = "add_prod"
+    const val PREVIEW_PDF = "preview_pdf"
 //    const val ORDER_LIST_ROUTE = "order_list"
     const val ORDER_ROUTE = "order"
-    const val ADD_ITEM_RENTAL_ORDER_ROUTE = "add_item_rental_order"
+//    const val ADD_ITEM_RENTAL_ORDER_ROUTE = "add_item_rental_order"
+//    const val SELECT_ITEM_RENTAL_ORDER_ROUTE = "add_item_rental_order"
     const val ADD_PAYMENT_ROUTE = "add_payment"
     const val ADD_CHARGES_ROUTE = "add_charges"
+
+    //Order status
+    const val OPEN_ORDER = "open"
+    const val RETURNED_ORDER = "returned"
+
 }

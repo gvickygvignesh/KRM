@@ -1,5 +1,6 @@
 package com.krm.rentalservices.viewmodel
 
+import android.util.Log
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
@@ -10,6 +11,7 @@ import com.krm.rentalservices.CustomerState
 import com.krm.rentalservices.Resource
 import com.krm.rentalservices.model.Customer
 import com.krm.rentalservices.repository.CustomersRepository
+import com.krm.rentalservices.ui.TAG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -45,9 +47,11 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
     // Flow to collect inventory items
     private fun fetchCustomers() {
         job?.cancel()
+        Log.d(TAG, "fetchCustomers: Called")
         job = viewModelScope.launch(Dispatchers.IO) {
 //            val itemsFlow: Flow<Resource<List<InventoryItem>>> =
             customersRepository.fetchCustomers().onEach { result ->
+                Log.d(TAG, "fetchCustomers: data " + result.data)
                 when (result) {
                     is Resource.Error ->
                         _customerState.value = CustomerState(

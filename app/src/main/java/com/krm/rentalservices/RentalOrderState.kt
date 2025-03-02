@@ -1,6 +1,5 @@
 package com.krm.rentalservices
 
-import com.krm.rentalservices.model.InventoryItem
 import com.krm.rentalservices.model.RentalOrder
 
 data class RentalOrderState(

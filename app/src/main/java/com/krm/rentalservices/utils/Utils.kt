@@ -10,5 +10,11 @@ class Utils {
             val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss") // Define the format
             return current.format(formatter) // Format the datetime
         }
+
+        fun generateInvoiceNumber(): String {
+            val timeStamp = System.currentTimeMillis() // Current time in milliseconds
+            return "INV${timeStamp}"
+        }
+
     }
 }

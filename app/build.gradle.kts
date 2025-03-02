@@ -75,6 +75,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     ksp(libs.hilt.android.compiler)
 
+    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    implementation(libs.gson)
+
 //    implementation(platform(libs.androidx.compose.bom))
 
     // Coroutines and Flow
@@ -87,6 +90,7 @@ dependencies {
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.firestore)
 
+    implementation(libs.itextpdf.itext7.core)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

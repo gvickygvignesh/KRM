@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavHostController
 import com.krm.rentalservices.BottomNavItem
+import com.krm.rentalservices.viewmodel.ERROR_HTTP
 import com.krm.rentalservices.viewmodel.ERROR_INTERNET
 import com.krm.rentalservices.viewmodel.RentalOrderViewModel
 import com.krm.rentalservices.viewmodel.SUCCESS
@@ -71,34 +72,30 @@ fun OrderPDFViewerScreen(
     }
 
     val state = rentalOrderViewModel.addRentalOrderState.value
-//    val isOrderUpdate = rentalOrderViewModel.isUpdateOrder.value
 
     if (!state.isEventHandled) {
+        var toastText = ""
         when (state.success) {
             SUCCESS -> { //, ERROR_INTERNET
-                Toast.makeText(
-                    LocalContext.current,
-                    state.data + if (orderState.value) " Order updated successfully" else " Order placed successfully",
-                    Toast.LENGTH_LONG
-                ).show()
-
                 rentalOrderViewModel.clearData()
-//                rentalOrderViewModel.markEventHandled()
                 rentalOrderViewModel.fetchInventory()
+                toastText =  state.data + if (orderState.value) " Order updated successfully" else " Order placed successfully"
+                ShowToast(toastText, LocalContext.current)
                 navController.navigate(BottomNavItem.OrderList.route) {
                     popUpTo(navController.graph.startDestinationId) { inclusive = true }
                 }
             }
 
             ERROR_INTERNET -> {
-                Toast.makeText(
-                    LocalContext.current,
-                    state.data + " No internet connection",
-                    Toast.LENGTH_LONG
-                ).show()
+                toastText = state.data + " No internet connection"
+                ShowToast(toastText, LocalContext.current)
+            }
+
+            ERROR_HTTP -> {
+                toastText = state.data + " Error in execution"
+                ShowToast(toastText, LocalContext.current)
             }
         }
-
     }
 
     Column(
@@ -152,13 +149,6 @@ fun OrderPDFViewerScreen(
             }
             Button(
                 onClick = {
-                    /* var orderStatus = Constants.OPEN_ORDER
-                     if (rentalOrderViewModel.isUpdateOrder.value) {
-                         if (rentalOrderViewModel.rentalOrder.value!!.orderStatus == Constants.RETURNED_ORDER) {
-                             orderStatus = Constants.RETURNED_ORDER
-                         }
-
-                     }*/
                     rentalOrderViewModel.saveRentalOrder()
                 },
                 colors = ButtonDefaults.buttonColors(
@@ -168,12 +158,17 @@ fun OrderPDFViewerScreen(
             ) {
                 Text("Done")
             }
-
-            /* Button(onClick = { downloadPdf(context, pdfFile) }) {
-                 Text("Download")
-             }*/
         }
     }
+}
+
+@Composable
+fun ShowToast(toastText : String, context: Context){
+    Toast.makeText(
+        LocalContext.current,
+        toastText,
+        Toast.LENGTH_LONG
+    ).show()
 }
 
 // Function to render the first page of PDF as Bitmap
@@ -201,16 +196,6 @@ fun printPdf(context: Context, file: File) {
     val printAdapter: PrintDocumentAdapter = PdfPrintAdapter(context, file)
     printManager.print("Invoice", printAdapter, PrintAttributes.Builder().build())
 }
-/*
-// Function to Share PDF
-fun sharePdf(context: Context, file: File) {
-    val uri = Uri.fromFile(file)
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "application/pdf"
-        putExtra(Intent.EXTRA_STREAM, uri)
-    }
-    context.startActivity(Intent.createChooser(intent, "Share Invoice PDF"))
-}*/
 
 fun sharePdf(context: Context, file: File) {
     val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
@@ -224,15 +209,6 @@ fun sharePdf(context: Context, file: File) {
     context.startActivity(Intent.createChooser(shareIntent, "Share Invoice PDF"))
 }
 
-
-// Function to Download PDF (Copy to Downloads Folder)
-/*fun downloadPdf(context: Context, file: File) {
-    val downloadsDir =
-        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-    val newFile = File(downloadsDir, "Invoice" + Utils.getCurrentDateTime() + ".pdf")
-    file.copyTo(newFile, overwrite = true)
-    Log.d("PDF_VIEWER", "File copied to Downloads: ${newFile.absolutePath}")
-}*/
 
 // Print Adapter Class
 class PdfPrintAdapter(private val context: Context, private val file: File) :

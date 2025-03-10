@@ -40,6 +40,7 @@ import com.google.gson.Gson
 import com.krm.rentalservices.BottomNavItem
 import com.krm.rentalservices.BottomNavigationBar
 import com.krm.rentalservices.Constants
+import com.krm.rentalservices.model.Customer
 import com.krm.rentalservices.model.RentalOrder
 import com.krm.rentalservices.viewmodel.InventoryViewModel
 import com.krm.rentalservices.viewmodel.RentalOrderViewModel
@@ -50,7 +51,6 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var inventoryViewModel: InventoryViewModel
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         inventoryViewModel = ViewModelProvider(this)[InventoryViewModel::class.java]
@@ -58,11 +58,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    // Column to hold both the Add Item UI and the List UI
-                    /*Column {
-                        AddItemScreen(viewModel = inventoryHiltViewModel)
-                        ItemListScreen(viewModel = inventoryHiltViewModel)
-                    }*/
                 }
                 MainScreen(inventoryViewModel)
             }
@@ -82,12 +77,11 @@ fun MainScreen(inventoryViewModel: InventoryViewModel) {
     // List of routes where the bottom bar should be hidden
     val hideBottomBarRoutes = listOf(
         "${Constants.ORDER_ROUTE}?orderJson={rentalOrderJson}",
-//        Constants.ADD_ITEM_RENTAL_ORDER_ROUTE,
         Constants.ADD_CHARGES_ROUTE,
         Constants.ADD_PAYMENT_ROUTE,
         Constants.ADD_PRODUCT,
-        Constants.MANAGE_INV_ROUTE,
-        Constants.ADD_CUSTOMER_ROUTE,
+        "${Constants.MANAGE_INV_ROUTE}?prodId={selectedProdId}",
+        "${Constants.ADD_CUSTOMER_ROUTE}?customerJson={customerJson}",
         Constants.PREVIEW_PDF
     )
 
@@ -96,7 +90,6 @@ fun MainScreen(inventoryViewModel: InventoryViewModel) {
     val isBottomBarVisible = currentRoute !in hideBottomBarRoutes
     val appBarTitle = when (currentRoute) {
         Constants.ORDER_ROUTE -> "Order Details"
-//        Constants.ADD_ITEM_RENTAL_ORDER_ROUTE -> "Add Rental Item"
         Constants.ADD_CHARGES_ROUTE -> "Add Charges"
         Constants.ADD_PAYMENT_ROUTE -> "Add Payment"
         Constants.ADD_PRODUCT -> "Add Product"
@@ -109,7 +102,6 @@ fun MainScreen(inventoryViewModel: InventoryViewModel) {
     val animatedHeight by animateDpAsState(
         targetValue = if (isBottomBarVisible) bottomBarHeight else 0.dp, label = ""
     )
-
 
     Scaffold(topBar = {
         AnimatedVisibility(
@@ -163,15 +155,6 @@ fun MainScreen(inventoryViewModel: InventoryViewModel) {
                 val rentalOrder =
                     rentalOrderJson?.let { Gson().fromJson(it, RentalOrder::class.java) }
 
-                /* var rentalOrder: RentalOrder? = null
-                 // Decode and parse JSON
-                 val json = backStackEntry.arguments?.getString("rentalOrderJson")
-                     ?.let { URLDecoder.decode(it, "UTF-8") }
-                 if (!json.isNullOrEmpty()) {
-                     rentalOrder = Gson().fromJson(json, RentalOrder::class.java)
-                 }*/
-
-//                rentalOrderViewModel.setDataFetched(false)
                 rentalOrderViewModel = hiltViewModel()
                 RentalOrder(
                     navController = navController,
@@ -179,22 +162,6 @@ fun MainScreen(inventoryViewModel: InventoryViewModel) {
                     rentalOrder = rentalOrder
                 )
             }
-            /*composable(Constants.ORDER_ROUTE,
-                enterTransition = { slideInHorizontally(initialOffsetX = { it / 2 }) + fadeIn() },
-                exitTransition = { slideOutHorizontally(targetOffsetX = { -it / 2 }) + fadeOut() }) {
-                isTopBarVisible = false
-                RentalOrder(
-                    navController = navController, rentalOrderViewModel = rentalOrderViewModel
-                )
-            }*/
-            /* composable(Constants.ADD_ITEM_RENTAL_ORDER_ROUTE) {
-                 isTopBarVisible = false
-                 AddItemRentalOrderOverlay(
-                     navController = navController, onDismiss = {
-                         navController.popBackStack()
-                     }, rentalOrderViewModel = rentalOrderViewModel
-                 )
-             }*/
 
             composable(Constants.ADD_CHARGES_ROUTE) {
                 isTopBarVisible = false
@@ -218,57 +185,38 @@ fun MainScreen(inventoryViewModel: InventoryViewModel) {
             }
 
             composable(BottomNavItem.ProdList.route) {
-                ProductList(viewModel = inventoryViewModel, navController = navController)
+                ProductList(invViewModel = inventoryViewModel, navController = navController)
             }
-            composable(Constants.ADD_PRODUCT) {
-                AddProduct(viewModel = inventoryViewModel, navController = navController)
-            }
+            /*composable(Constants.ADD_PRODUCT) {
+                AddProductDialog(viewModel = inventoryViewModel) //, navController = navController)
+            }*/
 
             composable(BottomNavItem.Inventory.route) {
-                InventoryScreen(navController = navController)
+                InventoryList(navController = navController)
             }
-            composable(Constants.MANAGE_INV_ROUTE) {
-                ManageInventory(navController = navController)
+            composable(
+                "${Constants.MANAGE_INV_ROUTE}?prodId={selectedProdId}",
+            ) { backStackEntry ->
+                val selectedProdId = backStackEntry.arguments?.getString("selectedProdId")
+                ManageInventory(navController = navController, selectedProdId = selectedProdId)
             }
 
             composable(BottomNavItem.CustomerDirectory.route) {
                 CustomersList(navController = navController)
             }
-            composable(Constants.ADD_CUSTOMER_ROUTE) {
-                AddCustomer(navController = navController)
+            composable(
+                "${Constants.ADD_CUSTOMER_ROUTE}?customerJson={customerJson}"
+            ) { it ->
+                val customerJson = it.arguments?.getString("customerJson")
+                val customer =
+                    customerJson?.let { Gson().fromJson(it, Customer::class.java) }
+
+                AddCustomer(navController = navController, selectedCustomer = customer)
             }
-           /* composable(Constants.CHOOSE_CUSTOMER_ROUTE) {
-                ChooseCustomerOrderOverlay(navController = navController, onDismiss = {
-                    navController.popBackStack()
-                }, rentalOrderViewModel = rentalOrderViewModel)
-            }*/
 
             composable(BottomNavItem.MoreOptions.route) {
                 MoreOptions(navController = navController)
             }
-
-
-//            }
-            /* // Spacer to prevent sudden UI shift
-             Spacer(modifier = Modifier.height(animatedHeight))*/
         }
     }
 }
-
-/*import android.os.Bundle
-import androidx.navigation.NavType
-import com.google.gson.Gson*/
-
-/*val rentalOrderNavType = object : NavType<RentalOrder>(isNullableAllowed = false) {
-    override fun get(bundle: Bundle, key: String): RentalOrder? {
-        return bundle.getParcelable(key)
-    }
-
-    override fun parseValue(value: String): RentalOrder {
-        return Gson().fromJson(value, RentalOrder::class.java)
-    }
-
-    override fun put(bundle: Bundle, key: String, value: RentalOrder) {
-        bundle.putParcelable(key, value)
-    }
-}*/

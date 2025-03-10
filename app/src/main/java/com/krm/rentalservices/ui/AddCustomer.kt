@@ -1,6 +1,7 @@
 // ItemListScreen.kt
 package com.krm.rentalservices.ui
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -15,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.google.firebase.Timestamp
+import com.krm.rentalservices.model.Customer
 import com.krm.rentalservices.viewmodel.CustomersViewModel
 import com.krm.rentalservices.viewmodel.ERROR_INTERNET
 import com.krm.rentalservices.viewmodel.SUCCESS
@@ -36,8 +39,11 @@ import com.krm.rentalservices.viewmodel.SUCCESS
 @Composable
 fun AddCustomer(
     viewModel: CustomersViewModel = hiltViewModel(),
-    navController: NavHostController
+    navController: NavHostController,
+    selectedCustomer: Customer?
 ) {
+
+    Log.d(TAG, "AddCustomer: " + selectedCustomer.toString())
 //    val items = viewModel.itemsFlow.collectAsState(initial = emptyList()).value // Collect items
     var showDialog by remember { mutableStateOf(false) }
     val itemNameFocusRequester = remember { FocusRequester() }
@@ -57,14 +63,27 @@ fun AddCustomer(
 
     val state = viewModel.addCustomerState.value
 
+    LaunchedEffect(selectedCustomer) {
+        if (selectedCustomer != null) {
+            custName = selectedCustomer.name
+            type = selectedCustomer.type
+            address = selectedCustomer.address
+            mobNo = selectedCustomer.mobNo
+            idNo = selectedCustomer.idNo
+            idType = selectedCustomer.idType
+            idPhoto = selectedCustomer.idPhoto
+        }
+    }
+
     if (!state.isEventHandled) {
         when (state.success) {
             SUCCESS, ERROR_INTERNET -> {
                 Toast.makeText(
                     LocalContext.current,
-                    state.data + " Customer added successfully",
+                    state.data + " success",
                     Toast.LENGTH_LONG
                 ).show()
+                navController.popBackStack()
             }
         }
 
@@ -193,7 +212,8 @@ fun AddCustomer(
                     else -> {
                         formIsValid = true
                         validationMessage = ""
-                        viewModel.addCustomer(
+                        viewModel.addOrUpdateCustomer(
+                            custId = selectedCustomer?.id ?: "",
                             name = custName, type = type, address = address,
                             mobNo = mobNo, idNo = idNo, idType = idType, idPhoto = idPhoto,
                             Timestamp.now()
@@ -208,10 +228,10 @@ fun AddCustomer(
                     }
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = formIsValid,
+            modifier = Modifier.fillMaxWidth()
+//            enabled = formIsValid,
         ) {
-            Text("Add Customer")
+            Text(if (selectedCustomer != null) "Update customer" else "Add Customer")
         }
     }
 }

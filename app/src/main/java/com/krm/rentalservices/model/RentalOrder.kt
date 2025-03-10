@@ -22,7 +22,9 @@ data class RentalOrder(
     var timestamp: Timestamp? = null
 ) {
     // Helper functions to convert back to Date and Timestamp
-    fun getOrderDateAsDate(): Date? = orderDate?.let { Date(it) }
+    fun getOrderDateAsDate(): Date? =
+        orderDate?.let { Date(it) } //ToDo check in Firebaase DB why added
+
     fun getReturnOrderDateAsDate(): Date? = returnOrderDate?.let { Date(it) }
     override fun toString(): String {
         return "RentalOrder(" +

@@ -3,6 +3,7 @@ package com.krm.rentalservices.repository
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
@@ -64,15 +65,21 @@ class CustomersRepository @Inject constructor(private val firebaseFirestore: Fir
     }
 
 
-    fun addCustomer(customer: Customer): Flow<Resource<String>> = callbackFlow {
+    fun addOrUpdateCustomer(customer: Customer): Flow<Resource<String>> = callbackFlow {
         trySend(Resource.Loading())
         val db = Firebase.firestore
-        val newDocRef = db.collection(Companion.FB_CUST_REF).document()
-        customer.id = newDocRef.id
+        val docRef: DocumentReference
 
-        newDocRef.set(customer).addOnSuccessListener {
-            trySend(Resource.Success(newDocRef.id))
-            Log.d(TAG, "addItem: success ${newDocRef.id}")
+        if (customer.id.isEmpty()) {
+            docRef = db.collection(FB_CUST_REF).document()
+            customer.id = docRef.id
+        } else {
+            docRef = db.collection(FB_CUST_REF).document(customer.id)
+        }
+
+        docRef.set(customer).addOnSuccessListener {
+            trySend(Resource.Success(docRef.id))
+            Log.d(TAG, "Customer added: success ${docRef.id}")
         }.addOnFailureListener { e ->
             Log.d(TAG, "Error adding doc")
             if (e.message != null) {

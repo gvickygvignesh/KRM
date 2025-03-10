@@ -40,14 +40,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/*@HiltViewModel
-class RentalOrderViewModel @Inject constructor(
-    private val repository: InventoryRepository,
-    private val customersRepository: CustomersRepository
-) : ViewModel() {
-
-}*/
-
 @HiltViewModel
 class RentalOrderViewModel @Inject constructor(
     private val inventoryRepository: InventoryRepository,
@@ -77,18 +69,15 @@ class RentalOrderViewModel @Inject constructor(
     private val _isUpdateOrder = MutableStateFlow(false)
     val isUpdateOrder: StateFlow<Boolean> = _isUpdateOrder.asStateFlow()
 
-    private val _rentalOrder = MutableStateFlow<RentalOrder?>(null)
-    val rentalOrder = _rentalOrder.asStateFlow()
-
+    private val _selectedRentalOrder =
+        MutableStateFlow<RentalOrder?>(null) //Rental Order selected from the list
+    val selectedRentalOrder = _selectedRentalOrder.asStateFlow()
 
     private val _discountedTotalAmount = MutableStateFlow(0L)
     private val _totalAmount = MutableStateFlow(0L)
 
     private val _orderID = MutableStateFlow<String?>(null)
     val orderID = _orderID.asStateFlow()
-
-//    var dataFetch = MutableStateFlow(false)
-//    var _dataFetch: StateFlow<Boolean> = dataFetch
 
     // Combine total and discount values to dynamically update totalAmount
     val totalAmount: StateFlow<Long> = combine(
@@ -98,15 +87,11 @@ class RentalOrderViewModel @Inject constructor(
         if (discounted != 0L) discounted else total
     }.stateIn(viewModelScope, SharingStarted.Lazily, 0L)
 
-    /*val totalAmount: StateFlow<Long> =
-        if (_discountedTotalAmount.value != 0L) _discountedTotalAmount else _totalAmount*/
-
     private val _otherChargesTotalAmount = MutableStateFlow(0L)
     val otherChargesTotalAmount: StateFlow<Long> = _otherChargesTotalAmount.asStateFlow()
 
     private val _paidAmount = MutableStateFlow(0L)
     val paidAmount: StateFlow<Long> = _paidAmount.asStateFlow()
-
 
     private val _selectedCustomer = MutableStateFlow<Customer?>(null)
     val selectedCustomer: StateFlow<Customer?> = _selectedCustomer.asStateFlow()
@@ -125,10 +110,6 @@ class RentalOrderViewModel @Inject constructor(
     private val _addRentalOrderState = mutableStateOf(AddFireStoreState())
     val addRentalOrderState: State<AddFireStoreState> = _addRentalOrderState
 
-    /* init {
-         Log.d(TAG, "RentalOrder: viewmodel init called: ")
-         dataFetch.value = false
-     }*/
     init {
         Log.d(TAG, "RentalOrder: viewmodel init called: ")
         clearData()
@@ -139,7 +120,6 @@ class RentalOrderViewModel @Inject constructor(
 
     private fun fetchCustomers() {
         viewModelScope.launch {
-            // Simulate API call
             _customerState.value = CustomerState(isLoading = true)
             customersRepository.fetchCustomers().onEach { result ->
                 when (result) {
@@ -174,13 +154,11 @@ class RentalOrderViewModel @Inject constructor(
                         )
 
                         // Preselect specific customer if not null
-
                         if (_isUpdateOrder.value && !hasPreselected) {
                             val preselectedCustomer =
-                                result.data.find { it.id == _rentalOrder.value?.customerId }
+                                result.data.find { it.id == _selectedRentalOrder.value?.customerId }
                             if (preselectedCustomer != null) {
                                 selectCustomer(preselectedCustomer)
-//                                _selectedCustomer.value = preselectedCustomer
                                 hasPreselected = true // Ensure it doesn't run again
                             }
                         }
@@ -188,14 +166,11 @@ class RentalOrderViewModel @Inject constructor(
 
                 }
             }.launchIn(viewModelScope)
-//            _customerState.value = CustomerState(isLoading = false, data = customers)
         }
     }
 
     fun fetchInventory() {
         viewModelScope.launch {
-            // Simulate API call
-//            _inventoryState.value = InventoryState(isLoading = true)
             inventoryRepository.getInvItems().onEach { result ->
                 when (result) {
                     is Resource.Error ->
@@ -230,14 +205,12 @@ class RentalOrderViewModel @Inject constructor(
                     }
                 }
             }.launchIn(viewModelScope)
-//            _inventoryState.value = InventoryState(isLoading = false, data = inventory)
         }
     }
 
     private fun fetchProducts() {
         viewModelScope.launch {
             // Simulate API call
-//            _inventoryState.value = InventoryState(isLoading = true)
             inventoryRepository.getProducts().onEach { result ->
                 when (result) {
                     is Resource.Error ->
@@ -272,23 +245,12 @@ class RentalOrderViewModel @Inject constructor(
                     }
                 }
             }.launchIn(viewModelScope)
-//            _inventoryState.value = InventoryState(isLoading = false, data = inventory)
         }
     }
 
     fun selectCustomer(customer: Customer) {
         _selectedCustomer.update { customer }
     }
-
-    /*fun checkPreSelectCustomer(){
-        if (_isUpdateOrder.value && !hasPreselected) {
-            val preselectedCustomer = customerState.value.data.find { it.id == _rentalOrder.value?.customerId }
-            if (preselectedCustomer != null) {
-                _selectedCustomer.value = preselectedCustomer
-                hasPreselected = true // Ensure it doesn't run again
-            }
-        }
-    }*/
 
     fun clearCustomer() {
         _selectedCustomer.update { null }
@@ -313,7 +275,6 @@ class RentalOrderViewModel @Inject constructor(
         updateChargesAmt()
     }
 
-
     fun setDiscountAmt(discountAmt: String) {
         Log.d(TAG, "setDiscountAmt : $discountAmt")
         val discountValue = discountAmt.toLongOrNull() ?: 0L
@@ -326,12 +287,8 @@ class RentalOrderViewModel @Inject constructor(
     }
 
     fun setRentalOrder(rentalOrder: RentalOrder) {
-        _rentalOrder.update { rentalOrder }
+        _selectedRentalOrder.update { rentalOrder }
     }
-
-    /* fun setDataFetched(status: Boolean) {
-         dataFetch.value = status
-     }*/
 
     private fun updateTotalAmt() {
         _totalAmount.update {
@@ -389,16 +346,17 @@ class RentalOrderViewModel @Inject constructor(
         days: Int,
         rentalPrice: Long,
         amount: Long,
-        isProductPresent: Boolean
+        isProductPresent: Boolean,
+        isDelete: Boolean
     ) {
         val product = _selectedProduct.value ?: return
-        /* val quantity = qty // Replace with quantity input field value
-         val days = days // Replace with days input field value
-         val price = rentalPrice//_selectedProduct.value?.rentalPrice ?: 0*/
 
         // Check if enough stock is available
-        val inventoryItem = _inventoryState.value.data.find { it.prodId == product.id }
-        if (inventoryItem != null && inventoryItem.avlCount >= qty) {
+//        val inventoryItem = _inventoryState.value.data.find { it.prodId == product.id }
+        if (isDelete) {
+            _orderItemsDTO.update { orderItemList -> orderItemList.filterNot { it.productId == product.id } }
+        } else {
+//            if (inventoryItem != null && inventoryItem.avlCount >= qty) { Removed As we already checked in UI
             val newItem = OrderItem(
                 productId = product.id,
                 productName = product.name,
@@ -414,11 +372,13 @@ class RentalOrderViewModel @Inject constructor(
             } else {
                 _orderItemsDTO.value += newItem
             }
-
-            selectProduct(null) //reset selection
-            // Update total amount
-            updateTotalAmt()
+//            }
         }
+
+        selectProduct(null) //reset selection
+
+        // Update total amount
+        updateTotalAmt()
     }
 
     fun addOtherChargesItem(otherChargeType: String, remarks: String, amount: Long) {
@@ -443,17 +403,16 @@ class RentalOrderViewModel @Inject constructor(
 
             if (_isUpdateOrder.value) {
                 isOrderUpdate = true
-                if (rentalOrder.value!!.orderStatus == Constants.RETURNED_ORDER) {
+                if (selectedRentalOrder.value!!.orderStatus == Constants.RETURNED_ORDER) {
                     isOrderReturn = true
                 }
             }
 
             val updatedRentalOrder: RentalOrder = createOrderItem(isOrderUpdate, isOrderReturn)
 
-//            rentalOrdersRepository.createRentalOrderWithInventoryUpdate(newOrder).collectLatest { result -> }
-            /* rentalOrdersRepository.addRentalOrder(rentalOrder = newOrder).collectLatest { result -> */
             rentalOrdersRepository.createOrUpdateRentalOrderWithInventoryUpdate(
                 updatedRentalOrder,
+                selectedRentalOrder.value,
                 isOrderUpdate
             ).collectLatest { result ->
                 when (result) {
@@ -490,7 +449,6 @@ class RentalOrderViewModel @Inject constructor(
                             isEventHandled = false
                         )
                     }
-
                 }
             }
         }
@@ -502,7 +460,7 @@ class RentalOrderViewModel @Inject constructor(
             customerName = _selectedCustomer.value?.name ?: "",
             orderDate = System.currentTimeMillis(),
             orderId = if (isEditOrder || isReturnOrder) {
-                rentalOrder.value!!.orderId
+                selectedRentalOrder.value!!.orderId
             } else _orderID.value!!,
             orderStatus = if (isReturnOrder) {
                 Constants.RETURNED_ORDER
@@ -522,11 +480,6 @@ class RentalOrderViewModel @Inject constructor(
 
         return rentalOrder
     }
-
-    /*fun markEventHandled() {
-        _addRentalOrderState.value = _addRentalOrderState.value.copy(isEventHandled = true)
-    }*/
-
 
     // Flow to collect Rental order items
     fun fetchRentalOrders() {
@@ -569,7 +522,6 @@ class RentalOrderViewModel @Inject constructor(
             }.launchIn(viewModelScope)
         }
     }
-
 }
 
 

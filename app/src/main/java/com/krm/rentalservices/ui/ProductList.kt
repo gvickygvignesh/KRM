@@ -1,6 +1,7 @@
 // ItemListScreen.kt
 package com.krm.rentalservices.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.krm.rentalservices.ProdState
@@ -42,85 +43,109 @@ import com.krm.rentalservices.viewmodel.InventoryViewModel
 import com.krm.rentalservices.viewmodel.SUCCESS
 
 @Composable
-fun ProductList(viewModel: InventoryViewModel, navController: NavHostController) {
+fun ProductList(invViewModel: InventoryViewModel, navController: NavHostController) {
 //    val items = viewModel.itemsFlow.collectAsState(initial = emptyList()).value // Collect items
-    val state = viewModel.prodState.collectAsState()
-    var showDialog by remember { mutableStateOf(false) }
+    val state = invViewModel.prodState.collectAsState()
+    var showDialog by remember { mutableStateOf(false) } // 🔹 Manage dialog state
+
+    val delItemState = invViewModel.delItemState.value
+
+    if (!delItemState.isEventHandled) {
+        when (delItemState.success) {
+            SUCCESS -> {
+                Toast.makeText(
+                    LocalContext.current, "Deleted Success", Toast.LENGTH_LONG
+                ).show()
+            }
+
+            ERROR_INTERNET -> {
+                Toast.makeText(
+                    LocalContext.current, "Error occurred", Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+
+        invViewModel.markDelEventHandled()
+    }
 
     when (state.value.success) {
         SUCCESS, ERROR_INTERNET -> {
-            ProdCardList(state, viewModel, navController)
-        }
-    }
-    /*  when (state.isLoading) {
-          true -> {
-              CircularProgressIndicator()
-          }
+            Scaffold(
+                floatingActionButton = {
+                    FloatingActionButton(
+                        onClick = {
+                            invViewModel.clearSelectedProductItem()
+                            showDialog = true
+                        },
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        /*Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add"
+                        )*/
+                        Text("+ Add Item", modifier = Modifier.padding(16.dp))
+                    }
+                }
+            ) { innerPadding ->
+                Row(
+                    modifier = Modifier.padding(innerPadding),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(state.value.data) { item ->
+                            ProductItemRow(item, invViewModel, navController, { showDialog = true })
+                        }
+                    }
+                }
 
-          false -> TODO()
-      }*/
-
-    ProdCardList(state, viewModel, navController)
-
-
-}
-
-@Composable
-fun ProdCardList(
-    state: State<ProdState>,
-    viewModel: InventoryViewModel,
-    navController: NavHostController
-) {
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    navController.navigate("add_prod")
-                },
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add"
-                )
-            }
-        }
-    ) { innerPadding ->
-        Row(
-            modifier = Modifier.padding(innerPadding),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.value.data) { item ->
-                    ProductItemRow(item, viewModel, navController)
+                if (showDialog) {
+                    AddProductDialog(
+                        viewModel = invViewModel,
+                        context = LocalContext.current,
+                        onDismiss = {
+                            showDialog = false
+                        }
+                    )
                 }
             }
         }
     }
 }
 
+
+@Composable
+fun ProdCardList(
+    state: State<ProdState>,
+    viewModel: InventoryViewModel,
+    navController: NavHostController,
+    showDialog: Boolean
+) {
+
+}
+
 @Composable
 fun ProductItemRow(
     product: Product,
     viewModel: InventoryViewModel,
-    navController: NavHostController
+    navController: NavHostController,
+    showDialog: () -> Unit
 ) {
 
-    var showDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
-    if (showDialog) {
+    if (showDeleteDialog) {
         YesNoDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = { showDeleteDialog = false },
             onConfirm = {
                 // Handle Yes action
                 viewModel.deleteProduct(product)
-                showDialog = false
+                showDeleteDialog = false
 //                Toast.makeText(LocalContext.current, "Confirmed", Toast.LENGTH_SHORT).show()
             },
             onCancel = {
                 // Handle No action
-                showDialog = false
+                showDeleteDialog = false
 //                Toast.makeText(LocalContext.current, "Canceled", Toast.LENGTH_SHORT).show()
             }
         )
@@ -151,8 +176,9 @@ fun ProductItemRow(
                 horizontalArrangement = Arrangement.End
             ) {
                 IconButton(onClick = {
-                    viewModel.selectItem(product)
-                    navController.navigate("add_prod")
+                    viewModel.setSelectProductItem(product)
+                    showDialog()
+//                    navController.navigate("add_prod")
                 }) {
                     Icon(
                         imageVector = Icons.Default.Edit,
@@ -161,7 +187,7 @@ fun ProductItemRow(
                     )
                 }
                 IconButton(onClick = {
-                    showDialog = true
+                    showDeleteDialog = true
                 }) {
                     Icon(
                         imageVector = Icons.Default.Delete,

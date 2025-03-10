@@ -89,7 +89,8 @@ class RentalOrdersRepository @Inject constructor(firebaseFireStore: FirebaseFire
 
 
     fun createOrUpdateRentalOrderWithInventoryUpdate(
-        rentalOrder: RentalOrder,
+        updatedRentalOrder: RentalOrder,
+        oldRentalOrder: RentalOrder?,
         isOrderUpdate: Boolean
     ): Flow<Resource<String>> = flow {
         emit(Resource.Loading())
@@ -99,7 +100,7 @@ class RentalOrdersRepository @Inject constructor(firebaseFireStore: FirebaseFire
             // Preload inventory data before transaction
             val inventoryRefsAndData = mutableListOf<Pair<DocumentReference, InventoryItem>>()
 
-            for (orderItem in rentalOrder.orderItemList) {
+            for (orderItem in updatedRentalOrder.orderItemList) {
                 val querySnapshot = db.collection(FIREBASE_INVENTORY_REF)
                     .whereEqualTo("prodId", orderItem.productId)
                     .limit(1)
@@ -119,18 +120,19 @@ class RentalOrdersRepository @Inject constructor(firebaseFireStore: FirebaseFire
 
             // Firestore transaction
             db.runTransaction { transaction ->
-                val orderRef = db.collection(FB_RENTAL_ORDER_REF).document(rentalOrder.orderId)
+                val orderRef =
+                    db.collection(FB_RENTAL_ORDER_REF).document(updatedRentalOrder.orderId)
                 val snapshot = transaction.get(orderRef)
                 val orderExists = snapshot.exists()
 
                 // Update inventory
-                rentalOrder.orderItemList.forEach { orderItem ->
+                updatedRentalOrder.orderItemList.forEach { orderItem ->
                     val (inventoryRef, inventoryItem) = inventoryRefsAndData.first { it.second.prodId == orderItem.productId }
 
-                    val updatedAvlCount: Int
-                    val updatedRentedCount: Int
+                    var updatedAvlCount: Int = 0
+                    var updatedRentedCount: Int = 0
 
-                    if (rentalOrder.orderStatus == Constants.RETURNED_ORDER) {
+                    if (updatedRentalOrder.orderStatus == Constants.RETURNED_ORDER) {
                         updatedAvlCount = inventoryItem.avlCount + orderItem.rtnQty
                         updatedRentedCount = inventoryItem.rentedCount - orderItem.rtnQty
 
@@ -138,49 +140,69 @@ class RentalOrdersRepository @Inject constructor(firebaseFireStore: FirebaseFire
                             throw IllegalStateException("Rented stock qty cannot be negative for productId: ${orderItem.productId}")
                         }
                     } else {
-                        updatedAvlCount = inventoryItem.avlCount - orderItem.quantity
-                        updatedRentedCount = inventoryItem.rentedCount + orderItem.quantity
+                        if (isOrderUpdate) { //here wr are handling the existing order qty balancing with the updated order qty
+                            val oldOrderItemOfCurrProdID =
+                                oldRentalOrder?.orderItemList?.find { it.productId == inventoryItem.prodId }
+
+                            oldOrderItemOfCurrProdID?.quantity?.let { qty ->
+                                updatedAvlCount =
+                                    inventoryItem.avlCount - (orderItem.quantity - qty)
+                                updatedRentedCount =
+                                    inventoryItem.rentedCount + (orderItem.quantity - qty)
+                            }
+
+                        } else {
+                            updatedAvlCount = inventoryItem.avlCount - orderItem.quantity
+                            updatedRentedCount = inventoryItem.rentedCount + orderItem.quantity
+                        }
 
                         if (updatedAvlCount < 0) {
                             throw IllegalStateException("Insufficient stock for productId: ${orderItem.productId}")
                         }
                     }
 
-                    transaction.update(inventoryRef, "avlCount", updatedAvlCount, "rentedCount", updatedRentedCount)
+                    transaction.update(
+                        inventoryRef,
+                        "avlCount",
+                        updatedAvlCount,
+                        "rentedCount",
+                        updatedRentedCount
+                    )
                 }
 
                 // Update or create order
                 if (isOrderUpdate) {
                     if (orderExists) {
-                        transaction.update(orderRef, mapOf(
-                            "customerId" to rentalOrder.customerId,
-                            "customerName" to rentalOrder.customerName,
-                            "orderStatus" to rentalOrder.orderStatus,
-                            "orderItemList" to rentalOrder.orderItemList,
-                            "paymentList" to rentalOrder.paymentList,
-                            "otherChargesList" to rentalOrder.otherChargesList,
-                            "totalAmt" to rentalOrder.totalAmt,
-                            "discountAmt" to rentalOrder.discountAmt,
-                            "paidAmt" to rentalOrder.paidAmt,
-                            "balanceAmt" to rentalOrder.balanceAmt,
-                            "returnOrderDate" to rentalOrder.returnOrderDate,
-                            "timestamp" to Timestamp.now()
-                        ))
+                        transaction.update(
+                            orderRef, mapOf(
+                                "customerId" to updatedRentalOrder.customerId,
+                                "customerName" to updatedRentalOrder.customerName,
+                                "orderStatus" to updatedRentalOrder.orderStatus,
+                                "orderItemList" to updatedRentalOrder.orderItemList,
+                                "paymentList" to updatedRentalOrder.paymentList,
+                                "otherChargesList" to updatedRentalOrder.otherChargesList,
+                                "totalAmt" to updatedRentalOrder.totalAmt,
+                                "discountAmt" to updatedRentalOrder.discountAmt,
+                                "paidAmt" to updatedRentalOrder.paidAmt,
+                                "balanceAmt" to updatedRentalOrder.balanceAmt,
+                                "returnOrderDate" to updatedRentalOrder.returnOrderDate,
+                                "timestamp" to Timestamp.now()
+                            )
+                        )
                     } else {
                         throw IllegalStateException("Order does not exist")
                     }
                 } else {
-                    transaction.set(orderRef, rentalOrder)
+                    transaction.set(orderRef, updatedRentalOrder)
                 }
             }.await()  // ✅ Ensure transaction completes before emitting success
 
-            emit(Resource.Success(rentalOrder.orderId))
+            emit(Resource.Success(updatedRentalOrder.orderId))
 
         } catch (e: Exception) {
             emit(Resource.Error("Transaction failed: ${e.message}"))
         }
     }
-
 
 
     fun updateCustomer(item: Customer): Flow<Resource<String>> = callbackFlow {

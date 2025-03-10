@@ -35,16 +35,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.google.gson.Gson
+import com.krm.rentalservices.Constants
 import com.krm.rentalservices.InventoryState
 import com.krm.rentalservices.model.InventoryItem
 import com.krm.rentalservices.viewmodel.ERROR_INTERNET
 import com.krm.rentalservices.viewmodel.InventoryViewModel
 import com.krm.rentalservices.viewmodel.SUCCESS
+import java.net.URLEncoder
 
 val TAG: String = "Sothanai"
 
 @Composable
-fun InventoryScreen(
+fun InventoryList(
     viewModel: InventoryViewModel = hiltViewModel(),
     navController: NavController
 ) {
@@ -58,35 +61,6 @@ fun InventoryScreen(
     }
 
     InventoryCardList(state, viewModel, navController)
-
-    /*Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    navController.navigate(Constants.MANAGE_INV_ROUTE)
-                },
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add"
-                )
-            }
-        }
-    ) { innerPadding ->
-        Row(
-            modifier = Modifier.padding(innerPadding),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(state.value.data) { invItem ->
-//                    InventoryCardList(invItem, {}, {})
-                }
-            }
-        }
-
-    }*/
 }
 
 @Composable
@@ -118,7 +92,13 @@ fun InventoryCardList(
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 Log.d(TAG, "InventoryCardList: size" + state.value.data.size)
                 items(state.value.data) { invItem ->
-                    InventoryCardRow(invItem, viewModel, {})
+                    InventoryCardRow(invItem, viewModel, {
+                        val route = run {
+                            val prodId = invItem.prodId
+                            "${Constants.MANAGE_INV_ROUTE}?prodId=$prodId"
+                        }
+                        navController.navigate(route)
+                    })
                 }
             }
         }
@@ -212,22 +192,5 @@ fun InventoryCardRow(
         }
     }
 }
-
-
-/*@Preview
-@Composable
-fun InvPreview() {
-    InventoryItemCard(
-        item = Product(
-            id = "123",
-            name = "Sample Item",
-            rentalPrice = 45.0,
-            description = "This is a sample product",
-            Timestamp.now()
-        ),
-        onDescChange = { updatedDescription ->
-            println("Description changed to: $updatedDescription")
-        })
-}*/
 
 

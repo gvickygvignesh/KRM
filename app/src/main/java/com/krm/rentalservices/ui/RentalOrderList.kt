@@ -29,10 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -54,7 +50,6 @@ fun RentalOrderList(
     viewModel: RentalOrderViewModel = hiltViewModel(), navController: NavHostController
 ) {
     val state = viewModel.rentalOrderState.collectAsState()
-    var showDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.fetchRentalOrders()
@@ -87,10 +82,7 @@ fun RentalOrderList(
     Scaffold(floatingActionButton = {
         FloatingActionButton(
             onClick = {
-
-
                 navController.navigate(Constants.ORDER_ROUTE)
-
 //                navController.navigate("${Constants.ORDER_ROUTE}/{rentalOrderJson}")
             }, modifier = Modifier.padding(16.dp)
         ) {
@@ -150,14 +142,11 @@ fun navigateToOrder(
 
 @Composable
 fun RentalOrderCard(
-    rentalOrder: RentalOrder,
-    viewModel: RentalOrderViewModel,
-    navController: NavHostController
+    rentalOrder: RentalOrder, viewModel: RentalOrderViewModel, navController: NavHostController
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+    Card(modifier = Modifier
+        .fillMaxWidth()
+        .padding(8.dp),
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
         onClick = {
@@ -189,8 +178,10 @@ fun RentalOrderCard(
 
 
 //            navController.navigate(Constants.ORDER_ROUTE)
-        }
-    ) {
+            if (rentalOrder.orderStatus == Constants.RETURNED_ORDER) {
+                navigateToOrder(rentalOrder, viewModel, navController, false)
+            }
+        }) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -226,23 +217,26 @@ fun RentalOrderCard(
                     .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.End
             ) {
-                IconButton(onClick = {
-                    navigateToOrder(rentalOrder, viewModel, navController, false)
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                IconButton(onClick = {
-                    navigateToOrder(rentalOrder, viewModel, navController, true)
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.error
-                    )
+                if (rentalOrder.orderStatus != Constants.RETURNED_ORDER) {
+                    IconButton(onClick = {
+                        navigateToOrder(rentalOrder, viewModel, navController, false)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+
+                    IconButton(onClick = {
+                        navigateToOrder(rentalOrder, viewModel, navController, true)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Return",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
             }
         }

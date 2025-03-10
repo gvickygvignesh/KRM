@@ -3,6 +3,7 @@ package com.krm.rentalservices.repository
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
@@ -155,14 +156,24 @@ class InventoryRepository @Inject constructor(private val firebaseFirestore: Fir
         }
     }
 
-    fun addInventoryItem(item: InventoryItem): Flow<Resource<String>> = callbackFlow {
+    fun addOrUpdateInventoryItem(
+        item: InventoryItem,
+        isInvUpdate: Boolean
+    ): Flow<Resource<String>> = callbackFlow {
         trySend(Resource.Loading())
         val db = Firebase.firestore
-        val newDocRef = db.collection(FIREBASE_INVENTORY_REF).document()
-        item.id = newDocRef.id
-        newDocRef.set(item).addOnSuccessListener {
-            trySend(Resource.Success(newDocRef.id))
-            Log.d(TAG, "Inventory added: success ${newDocRef.id}")
+        val docRef: DocumentReference
+
+        if (!isInvUpdate) {
+            docRef = db.collection(FIREBASE_INVENTORY_REF).document()
+            item.id = docRef.id
+        } else {
+            docRef = db.collection(FIREBASE_INVENTORY_REF).document(item.id)
+        }
+
+        docRef.set(item).addOnSuccessListener {
+            trySend(Resource.Success(docRef.id))
+            Log.d(TAG, "Inventory added: success ${docRef.id}")
         }.addOnFailureListener { e ->
             Log.d(TAG, "Error adding doc")
             if (e.message != null) {

@@ -1,6 +1,7 @@
 // ItemListScreen.kt
 package com.krm.rentalservices.ui
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -21,23 +21,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.firebase.Timestamp
+import com.krm.rentalservices.model.InventoryItem
 import com.krm.rentalservices.model.Product
+import com.krm.rentalservices.viewmodel.ERROR_HTTP
 import com.krm.rentalservices.viewmodel.ERROR_INTERNET
 import com.krm.rentalservices.viewmodel.InventoryViewModel
 import com.krm.rentalservices.viewmodel.SUCCESS
@@ -45,12 +48,11 @@ import com.krm.rentalservices.viewmodel.SUCCESS
 @Composable
 fun ManageInventory(
     viewModel: InventoryViewModel = hiltViewModel(),
-    navController: NavHostController
+    navController: NavHostController,
+    selectedProdId: String?
 ) {
-
-    var showDialog by remember { mutableStateOf(false) }
-    val itemNameFocusRequester = remember { FocusRequester() }
-
+    Log.d(TAG, "ManageInventory: init called")
+    var docID by remember { mutableStateOf("") }
     var prodID by remember { mutableStateOf("") }
     var prodName by remember { mutableStateOf("") }
     var totCount by remember { mutableStateOf("") }
@@ -58,28 +60,68 @@ fun ManageInventory(
     var avlCount by remember { mutableStateOf("") }
     var damagedCount by remember { mutableStateOf("") }
 
-    //    val items = viewModel.itemsFlow.collectAsState(initial = emptyList()).value // Collect items
-//    val productState by viewModel.productState.collectAsState()
-
     // Validation state
     var formIsValid by remember { mutableStateOf(true) }
     var validationMessage by remember { mutableStateOf("") }
 
     val prodState = viewModel.prodState.collectAsState()
-//    val state = viewModel.addProdState.value
-    var selectedProduct by remember { mutableStateOf<Product?>(null) }
+    val invState = viewModel.invState.collectAsStateWithLifecycle()
+    val selectedProduct = viewModel.selectedProductItem.collectAsState().value
+    var isProductPresent by remember { mutableStateOf(false) }
 
     val state = viewModel.addItemState.value
+    val context = LocalContext.current
 
-    when (state.success) {
-        SUCCESS, ERROR_INTERNET -> {
-            Toast.makeText(
-                LocalContext.current, state.data + " Success", Toast.LENGTH_LONG
-            ).show()
+    // Trigger ViewModel update when selectedProdId is not null
+    LaunchedEffect(selectedProdId, prodState.value.success) {
+        if (!selectedProdId.isNullOrEmpty() && prodState.value.success == SUCCESS) {
+            val product = prodState.value.data.find { it.id == selectedProdId }
+            product?.let { viewModel.setSelectProductItem(it) }
         }
     }
 
-//    navController.popBackStack()
+    // Sync UI state with ViewModel when selected product changes
+    LaunchedEffect(selectedProduct, invState.value.success) {
+        selectedProduct.let { product ->
+            invState.value.data.find { it.prodId == product?.id }?.let { inventoryItem ->
+                docID = inventoryItem.id
+                prodID = inventoryItem.prodId
+                prodName = inventoryItem.prodName
+                totCount = inventoryItem.totCount.toString()
+                avlCount = inventoryItem.avlCount.toString()
+                rentedCount = inventoryItem.rentedCount.toString()
+                damagedCount = inventoryItem.damagedCount.toString()
+                isProductPresent = true
+            } ?: run {
+                docID = ""
+                prodID = if (product?.id != null) product.id else ""
+                prodName = if (product?.name != null) product.name else ""
+                totCount = ""
+                avlCount = ""
+                rentedCount = ""
+                damagedCount = ""
+                isProductPresent = false
+            }
+        }
+    }
+
+    // Handle UI state updates for API response
+    LaunchedEffect(state.success) {
+        if (!state.isEventHandled) {
+            when (state.success) {
+                SUCCESS, ERROR_INTERNET -> {
+                    Toast.makeText(context, "${state.data} Success", Toast.LENGTH_LONG).show()
+                    viewModel.markEventHandled()
+                    navController.popBackStack()
+                }
+
+                ERROR_HTTP -> {
+                    Toast.makeText(context, "${state.data} Failed", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
     // Scrollable view
     Column(
         modifier = Modifier
@@ -88,33 +130,69 @@ fun ManageInventory(
         verticalArrangement = Arrangement.spacedBy(8.dp)
 
     ) {
-
         val ind = CircularProgressIndicator(LocalContext.current)
+        /*when (prodState.value.success) {
+            SUCCESS, ERROR_INTERNET -> {*/
+        // Spinner Composable
+        ProductSpinner(
+            products = prodState.value.data,
+            selectedProduct = selectedProduct,
+            onProductSelected = { product ->
+                if (product.id.isNotEmpty()) {
+                    viewModel.setSelectProductItem(product)
+                    val selectedInvItem: InventoryItem? = invState.value.data
+                        .find { it.prodId == product.id }
 
-        when (prodState.value.success) {
-            SUCCESS, ERROR_INTERNET -> {
-                // Spinner Composable
-                ProductSpinner(
-                    products = prodState.value.data,
-                    selectedProduct = selectedProduct,
-                    onProductSelected = { product ->
-                        selectedProduct = product
-                        prodID = selectedProduct?.id.toString()
-                        prodName = selectedProduct?.name.toString()
-                        println("Selected Product: ${product.name}")
-                    },
-                    modifier = Modifier // Ensures dropdown aligns correctly
-                        .wrapContentSize()
-                )
-
-            }
-        }
+                    if (selectedInvItem != null) {
+                        Log.d(
+                            TAG,
+                            "ManageInventory: selectedInvItem not null n totCnt" + selectedInvItem.totCount
+                        )
+                        docID = selectedInvItem.id
+                        prodID = selectedInvItem.prodId
+                        prodName = selectedInvItem.prodName
+                        totCount = selectedInvItem.totCount.toString()
+                        avlCount = selectedInvItem.avlCount.toString()
+                        rentedCount = selectedInvItem.rentedCount.toString()
+                        damagedCount = selectedInvItem.damagedCount.toString()
+                        isProductPresent = true
+                    } else {
+                        Log.d(
+                            TAG,
+                            "ManageInventory: selectedInvItem is null, prod id & name is " + product.id + " &" + product.name
+                        )
+                        docID = ""
+                        prodID = product.id
+                        prodName = product.name
+                        totCount = ""
+                        avlCount = ""
+                        rentedCount = ""
+                        damagedCount = ""
+                        isProductPresent = false
+                    }
+                } else {
+                    Log.d(TAG, "ManageInventory: all empty set called")
+                    docID = ""
+                    prodID = ""
+                    prodName = ""
+                    totCount = ""
+                    avlCount = ""
+                    rentedCount = ""
+                    damagedCount = ""
+                    isProductPresent = false
+                    viewModel.setSelectProductItem(null)
+                }
+            },
+            modifier = Modifier // Ensures dropdown aligns correctly
+                .fillMaxWidth()
+        )
+//            }
+//        }
 
         when (prodState.value.isLoading) {
             true -> ind.show()
             false -> ind.hide()
         }
-
 
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
@@ -134,7 +212,10 @@ fun ManageInventory(
 
         OutlinedTextField(
             value = rentedCount,
-            onValueChange = { rentedCount = it },
+            onValueChange = {
+                Log.d(TAG, "ManageInventory: rent value change$it")
+                rentedCount = it
+            },
             label = { Text("Rented Count") },
             isError = rentedCount.isEmpty() && !formIsValid,
             keyboardOptions = KeyboardOptions(
@@ -186,6 +267,7 @@ fun ManageInventory(
 
         Button(
             onClick = {
+                Log.d(TAG, "ManageInventory: selected prodID, name is$prodID &$prodName")
                 // Validation logic
                 when {
                     prodID.isEmpty() -> {
@@ -221,14 +303,17 @@ fun ManageInventory(
                     else -> {
                         formIsValid = true
                         validationMessage = ""
-                        viewModel.addInventoryItem(
-                            id = prodID,
+                        viewModel.addOrUpdateInventoryItem(
+                            docId = docID,
+                            prodId = prodID,
                             name = prodName,
                             totCount = totCount.toInt(),
                             rentedCount = rentedCount.toInt(),
                             avlCount = avlCount.toInt(),
                             damagedCount = damagedCount.toInt(),
-                            Timestamp.now()
+                            Timestamp.now(),
+                            isProductPresent,
+                            false
                         )
                         prodName = ""
                         totCount = ""
@@ -241,119 +326,65 @@ fun ManageInventory(
             modifier = Modifier.fillMaxWidth(),
 //            enabled = formIsValid,
         ) {
-            Text("Submit")
+            Text(if (isProductPresent) "Update Inventory" else "Add to Inventory")
         }
     }
 }
-
-
-/*@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ProductSpinner(
-    list: List<Product>,
-    preselected: Product,
-    onSelectionChanged: (product: Product) -> Unit,
-    modifier: Modifier = Modifier
-) {
-
-    var selected by remember { mutableStateOf(preselected) }
-    var expanded by remember { mutableStateOf(false) } // initial value
-
-    OutlinedCard(
-        modifier = modifier.clickable {
-            expanded = !expanded
-        }
-    ) {
-
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
-        ) {
-
-            Text(
-                text = selected.name,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            Icon(Icons.Outlined.ArrowDropDown, null, modifier = Modifier.padding(8.dp))
-
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.wrapContentWidth()   // delete this modifier and use .wrapContentWidth() if you would like to wrap the dropdown menu around the content
-            ) {
-                list.forEach { listEntry ->
-
-                    DropdownMenuItem(
-                        onClick = {
-                            selected = listEntry
-                            expanded = false
-                            onSelectionChanged(selected)
-                        },
-                        text = {
-                            Text(
-                                text = listEntry.name,
-                                modifier = Modifier
-                                    //.wrapContentWidth()  //optional instad of fillMaxWidth
-                                    .fillMaxWidth()
-                                    .align(Alignment.Start)
-                            )
-                        },
-                    )
-                }
-            }
-
-        }
-    }
-}*/
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductSpinner(
     products: List<Product>,
-    selectedProduct: Product?, // Pass the default product if available
+    selectedProduct: Product?, // Preselected product
     onProductSelected: (Product) -> Unit,
-    modifier: Modifier
+    modifier: Modifier = Modifier
 ) {
-    var expanded by remember { mutableStateOf(false) } // Controls dropdown visibility
-    var selectedItem by remember { mutableStateOf(selectedProduct ?: products.firstOrNull()) }
+    var expanded by remember { mutableStateOf(false) }
+
+    // **Fix: Ensure `selectedItem` updates when `selectedProduct` changes**
+    val selectedItem = remember(selectedProduct) { selectedProduct }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = !expanded } // Toggle dropdown visibility
+        onExpandedChange = { expanded = !expanded }
     ) {
         OutlinedTextField(
-            value = selectedItem?.name ?: "Select", // Show default text
+            value = selectedItem?.name ?: "Select Product",
             onValueChange = {},
-            readOnly = true, // Makes the field uneditable
+            readOnly = true,
             label = { Text("Select Product") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = modifier
-//            /*modifier = Modifier
-                .menuAnchor() // Ensures dropdown aligns correctly
-                .wrapContentSize()
+            modifier = modifier.menuAnchor()
         )
 
         ExposedDropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = modifier
+            onDismissRequest = { expanded = false }
         ) {
+            // Option to reset selection
+            DropdownMenuItem(
+                text = { Text("Select Product") },
+                onClick = {
+                    expanded = false
+                    onProductSelected(Product("", "", 0, "", null)) // Reset product
+                }
+            )
+
             products.forEach { product ->
                 DropdownMenuItem(
                     text = { Text(product.name) },
                     onClick = {
-                        selectedItem = product // Update selected item
                         expanded = false // Close dropdown
-                        onProductSelected(product) // Notify parent about the selection
+                        onProductSelected(product) // Notify parent about selection
                     }
                 )
             }
         }
     }
 }
+
+
 
 
 

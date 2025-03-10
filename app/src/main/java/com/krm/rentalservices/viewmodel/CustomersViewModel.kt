@@ -89,7 +89,8 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
     }
 
 
-    fun addCustomer(
+    fun addOrUpdateCustomer(
+        custId : String,
         name: String,
         type: String,
         address: String,
@@ -102,6 +103,7 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
         job?.cancel()
         job = viewModelScope.launch(Dispatchers.IO) {
             val newCustomer = Customer(
+                id = custId,
                 name = name,
                 type = type,
                 address = address,
@@ -112,7 +114,7 @@ class CustomersViewModel @Inject constructor(private val customersRepository: Cu
                 timeStamp = timestamp
             )
 
-            customersRepository.addCustomer(newCustomer).collectLatest { result ->
+            customersRepository.addOrUpdateCustomer(newCustomer).collectLatest { result ->
                 when (result) {
                     is Resource.Error ->
                         _addCustomerState.value = AddFireStoreState(

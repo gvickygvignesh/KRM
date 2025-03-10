@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
@@ -44,7 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -66,7 +63,6 @@ import com.itextpdf.layout.element.Table
 import com.itextpdf.layout.property.TextAlignment
 import com.itextpdf.layout.property.UnitValue
 import com.krm.rentalservices.Constants
-import com.krm.rentalservices.R
 import com.krm.rentalservices.model.Customer
 import com.krm.rentalservices.model.OrderItem
 import com.krm.rentalservices.model.Product
@@ -91,72 +87,28 @@ fun RentalOrder(
 
     Log.d(TAG, "RentalOrder: init called")
     // Collect state values using collectAsState to observe the data in UI
-    /* val customersState by rentalOrderViewModel.customerState.collectAsStateWithLifecycle()
-     val inventoryState by rentalOrderViewModel.inventoryState.collectAsStateWithLifecycle()
-     val productState by rentalOrderViewModel.prodState.collectAsStateWithLifecycle()*/
-    val orderItems by rentalOrderViewModel.orderItemsDTO.collectAsStateWithLifecycle()
 
-//    val discountedTotalAmount by rentalOrderViewModel.discountedTotalAmount.collectAsState()
+    val orderItems by rentalOrderViewModel.orderItemsDTO.collectAsStateWithLifecycle()
     val totalAmount by rentalOrderViewModel.totalAmount.collectAsStateWithLifecycle()
     val chargesAmt by rentalOrderViewModel.otherChargesTotalAmount.collectAsStateWithLifecycle()
     val paidAmount by rentalOrderViewModel.paidAmount.collectAsStateWithLifecycle()
     val discountAmt by rentalOrderViewModel.discountAmount.collectAsStateWithLifecycle()
     val isUpdateOrder by rentalOrderViewModel.isUpdateOrder.collectAsStateWithLifecycle()
-
-//    val dataFetch by rentalOrderViewModel.dataFetch.collectAsState()
-
     val selectedCustomer = rentalOrderViewModel.selectedCustomer.collectAsStateWithLifecycle()
+    val customerSpinner by rentalOrderViewModel.customerState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showDialog by remember { mutableStateOf(false) } // 🔹 Manage dialog state
-//    var isEditOrderItem by remember { mutableStateOf(false) }
-
-    val customerSpinner by rentalOrderViewModel.customerState.collectAsStateWithLifecycle()
-
-
-//    val selectedCustomer = remember { mutableStateOf<Customer?>(null) }
-//    var selectedCustomer = rentalOrderViewModel.selectedCustomer.collectAsState().value
-
-    /*var isUpdateOrder by remember { mutableStateOf(false) }
-    var isReturnOrder by remember { mutableStateOf(false) }*/
-
 
     //Prevents setting the order value one more time for not resets the current order editing during recomposition
     if (rentalOrder != null && !isUpdateOrder) {
         Log.d(TAG, "RentalOrder: is not null")
-        /* if (rentalOrder.orderStatus == Constants.RETURNED_ORDER) {
-             isReturnOrder = true
-         } else {
-             isUpdateOrder = true
-         }*/
         rentalOrderViewModel.setRentalOrder(rentalOrder)
         rentalOrderViewModel.setOtherChargesDTO(rentalOrder.otherChargesList)
         rentalOrderViewModel.setOrderItemDTO(rentalOrder.orderItemList)
         rentalOrderViewModel.setPaymentsDTO(rentalOrder.paymentList)
         rentalOrderViewModel.setDiscountAmt(rentalOrder.discountAmt.toString())
-        /*val customer = Customer(
-            id = rentalOrder.customerId,
-            name = rentalOrder.customerName,
-            type = "",
-            address = "",
-            mobNo = "",
-            idNo = "",
-            idType = "",
-            idPhoto = "",
-            timeStamp = null
-        )*/
-//        rentalOrderViewModel.selectCustomer(customer)
         rentalOrderViewModel.setIsUpdateOrder(true)
-//        rentalOrderViewModel.checkPreSelectCustomer()
     }
-
-    /*LaunchedEffect(!dataFetch) {
-        Log.d(TAG, "RentalOrder: LaunchedEffect called")
-        rentalOrderViewModel.clearData()
-        rentalOrderViewModel.fetchCustomers()
-        rentalOrderViewModel.fetchInventory()
-        rentalOrderViewModel.fetchProducts()
-        rentalOrderViewModel.setDataFetched(true)
-    }*/
 
     Scaffold(
         topBar = {
@@ -164,7 +116,7 @@ fun RentalOrder(
                 title = {
                     Text(
                         text = /*rentalOrderViewModel.selectedCustomer.value?.name
-                            ?: */"Rental Order",
+                            ?: */"Rental Order", //ToDo return or update order
                         color = Color.White
                     )
                 },
@@ -228,9 +180,7 @@ fun RentalOrder(
                         context = context,
                         onDismiss = {
                             showDialog = false
-//                            isEditOrderItem = false
                         },
-//                        isEditOrderItem = isEditOrderItem
                     )
                 }
 
@@ -308,10 +258,10 @@ fun RentalOrder(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
 
-                            TableCellBig(orderItem.productName, Modifier.weight(1f))
+                            TableCellBig(orderItem.productName, Modifier.weight(1.5f))
                             TableCell(
                                 "${orderItem.quantity} PCS × ${orderItem.days}D * ₹${orderItem.rentalPrice}",
-                                Modifier.weight(1f)
+                                Modifier.weight(1.5f)
                             )
                             if (isUpdateOrder && rentalOrder!!.orderStatus == Constants.RETURNED_ORDER) {
                                 TableCell("${orderItem.rtnQty} PCS Rtn", Modifier.weight(1f))
@@ -344,7 +294,6 @@ fun RentalOrder(
             OutlinedTextField(
                 value = discountAmt.toString(),
                 onValueChange = { newValue ->
-//                    Log.d(TAG, "onValueChange setDiscAmt: " + if (it.isNotEmpty()) it.toLong() else 0L)
                     rentalOrderViewModel.setDiscountAmt(newValue)
                     Log.d(TAG, "discountAmt newValue called newValue$newValue")
                 },
@@ -364,7 +313,7 @@ fun RentalOrder(
 
             // Total Amount
             Text(
-                "Total: ₹$totalAmount", //if (discountedTotalAmount == 0L) totalAmount else discountedTotalAmount,
+                "Total: ₹$totalAmount",
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier
                     .constrainAs(totalRow) {
@@ -409,30 +358,38 @@ fun RentalOrder(
 //                    .background(Color.LightGray)
                     .fillMaxWidth()
             ) {
-                IconButton(
+                Button(
                     onClick = { navController.navigate(Constants.ADD_CHARGES_ROUTE) },
                     Modifier
                         .fillMaxWidth()
                         .weight(1f)
+                        .padding(10.dp),
+                    shape = RectangleShape,
                 ) {
-                    Image(
+                    /*Image(
                         painter = painterResource(id = R.drawable.charges),  // Replace with your PNG image resource
                         contentDescription = "Choose Customer",  // Optional: For accessibility
                         modifier = Modifier.size(40.dp)  // Modify the size as needed
-                    )
+                    )*/
+                    Text("Add Charges")
                 }
 
-                IconButton(
+                Button(
                     onClick = { navController.navigate(Constants.ADD_PAYMENT_ROUTE) },
                     Modifier
                         .fillMaxWidth()
                         .weight(1f)
+                        .padding(10.dp),
+                    shape = RectangleShape
+
                 ) {
-                    Image(
+                    /*Image(
                         painter = painterResource(id = R.drawable.payment),  // Replace with your PNG image resource
                         contentDescription = "Payment",  // Optional: For accessibility
                         modifier = Modifier.size(40.dp)  // Modify the size as needed
-                    )
+                    )*/
+
+                    Text("Add Payment")
                 }
 
                 Button(
@@ -447,7 +404,8 @@ fun RentalOrder(
                     },
                     Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .weight(1f)
+                        .padding(10.dp),
                     shape = RectangleShape
                 ) {
                     /*Image(
@@ -458,54 +416,7 @@ fun RentalOrder(
 
                     Text("Preview Invoice")
                 }
-
-                /*Button(
-                    onClick = {
-    //                        navController.navigate(Constants.ADD_PAYMENT_ROUTE)
-                        rentalOrderViewModel.saveRentalOrder("open", false)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .weight(1f)
-                ) {
-                    Text("Save Order")
-                }*/
             }
-            /* // Fixed Paid Amount Field
-            OutlinedTextField(
-                value = paidAmount.toString(),
-                onValueChange = { rentalOrderViewModel.updatePaidAmount(it.toLongOrNull() ?: 0) },
-                label = { Text("Paid Amount") },
-                enabled = false,
-                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-                modifier = Modifier
-                    .constrainAs(paidInfo) {
-                        bottom.linkTo(balanceInfo.top)
-                    }
-                    .wrapContentSize()
-            )*/
-
-            /* Text(
-                 text = "Balance amount: " + (totalAmount - paidAmount),
-                 color = Color.Red,
-                 modifier = Modifier
-                     .constrainAs(balanceInfo) {
-                         bottom.linkTo(parent.bottom)
-                         start.linkTo(parent.start)
-                     }
-                     .fillMaxWidth()
-             )*/
-
-            /*// Fixed Save Order Button
-            Button(
-                onClick = { rentalOrderViewModel.saveRentalOrder() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-            ) {
-                Text("Save Order")
-            }*/
         }
     }
 }
@@ -519,7 +430,7 @@ fun clickPreviewInvoice(
             businessName = "KRM Rental Services \n Mimisal",
             businessContact = "9841949487",
             invoiceNo = if (rentalOrderViewModel.isUpdateOrder.value) {
-                rentalOrderViewModel.rentalOrder.value!!.orderId
+                rentalOrderViewModel.selectedRentalOrder.value!!.orderId
             } else {
                 rentalOrderViewModel.generateInvoiceNo()
             },
@@ -561,14 +472,15 @@ fun clickPreviewInvoice(
         )
 
     } ?: run {
-        Toast.makeText(context, "Choose customer first", Toast.LENGTH_SHORT)
+        Toast.makeText(context, "Please choose customer to proceed", Toast.LENGTH_SHORT)
             .show()
+        return
     }
 
     if (orderItems.isNotEmpty()) {
         navController.navigate(Constants.PREVIEW_PDF)
     } else {
-        Toast.makeText(context, "Add items first", Toast.LENGTH_SHORT)
+        Toast.makeText(context, "Please add items to proceed", Toast.LENGTH_SHORT)
             .show()
     }
 }
@@ -590,7 +502,7 @@ fun TableCell(text: String, modifier: Modifier) {
     Text(
         text = text,
         modifier = modifier.padding(3.dp),
-        fontSize = 14.sp,
+        fontSize = 12.sp,
         textAlign = TextAlign.Left
     )
 }
@@ -599,21 +511,13 @@ fun TableCell(text: String, modifier: Modifier) {
 fun TableCellBig(text: String, modifier: Modifier) {
 //    Column(modifier = modifier) {
     Text(
-        text = text + "/n" + "Qty * Days * Rate",
+        text = "$text\nQty * Days * Rate",
         modifier = modifier.padding(3.dp),
-        fontSize = 16.sp,
+        fontSize = 12.sp,
 //            fontFamily = FontFamily.SansSerif,
         textAlign = TextAlign.Left
     )
 
-    /* Text(
-         text = "Qty * Days * Rate",
-         modifier = modifier.padding(3.dp),
-//            fontFamily = FontFamily.Monospace,
-         fontSize = 12.sp,
-         textAlign = TextAlign.Left
-     )
- }*/
 }
 
 @Composable
@@ -653,11 +557,10 @@ fun TableAmtCell(text: String, modifier: Modifier) {
     Text(
         text = text,
         modifier = modifier.padding(3.dp),
-        fontSize = 14.sp,
+        fontSize = 12.sp,
         textAlign = TextAlign.Right
     )
 }
-
 
 fun generateInvoicePdfFile(
     context: Context,
@@ -708,7 +611,6 @@ fun generateInvoicePdfFile(
 
 // Add the table to the document
         document.add(invoiceTable)
-
 
         /*  document.add(
               Paragraph("Invoice No: $invoiceNo   Invoice Date: $invoiceDate")

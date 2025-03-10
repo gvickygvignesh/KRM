@@ -36,11 +36,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.google.gson.Gson
+import com.krm.rentalservices.Constants
 import com.krm.rentalservices.CustomerState
 import com.krm.rentalservices.model.Customer
 import com.krm.rentalservices.viewmodel.CustomersViewModel
 import com.krm.rentalservices.viewmodel.ERROR_INTERNET
 import com.krm.rentalservices.viewmodel.SUCCESS
+import java.net.URLEncoder
 
 @Composable
 fun CustomersList(viewModel: CustomersViewModel = hiltViewModel(), navController: NavHostController) {
@@ -78,7 +81,7 @@ fun CustomerCardList(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    navController.navigate("add_customer")
+                    navController.navigate(Constants.ADD_CUSTOMER_ROUTE)
                 },
                 modifier = Modifier.padding(16.dp)
             ) {
@@ -96,7 +99,15 @@ fun CustomerCardList(
         ) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(state.value.data) { customer ->
-                    CustomerCard(customer, {}, {})
+                    CustomerCard(customer, {
+                        val route = run {
+                            val customerJson = URLEncoder.encode(Gson().toJson(customer), "UTF-8")
+                                .replace("+", "%20") // Fix space encoding
+                            Constants.ADD_CUSTOMER_ROUTE+"?customerJson=$customerJson"
+                        }
+
+                        navController.navigate(route)
+                    }, {})
                 }
             }
         }

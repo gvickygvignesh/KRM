@@ -2,7 +2,9 @@ package com.krm.rentalservices.model
 
 import com.google.firebase.Timestamp
 import com.google.gson.annotations.SerializedName
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 data class RentalOrder(
     @SerializedName("orderId") var orderId: String = "",
@@ -22,8 +24,11 @@ data class RentalOrder(
     var timestamp: Timestamp? = null
 ) {
     // Helper functions to convert back to Date and Timestamp
-    fun getOrderDateAsDate(): Date? =
-        orderDate?.let { Date(it) } //ToDo check in Firebaase DB why added
+    fun getOrderDateAsDate(): String? =
+        orderDate?.let {
+            val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.ENGLISH)
+            return sdf.format(Date(it))
+        } //ToDo check in Firebaase DB why added
 
     fun getReturnOrderDateAsDate(): Date? = returnOrderDate?.let { Date(it) }
     override fun toString(): String {

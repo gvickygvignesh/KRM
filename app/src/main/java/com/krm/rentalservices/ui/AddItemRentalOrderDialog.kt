@@ -131,7 +131,7 @@ fun AddItemRentalOrderDialog(
                     OutlinedTextField(
                         value = quantity,
                         onValueChange = { quantity = it },
-                        label = { Text("Quantity") },
+                        label = { Text("Quantity", style = MaterialTheme.typography.labelLarge) },
                         keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
 //                    modifier = Modifier.weight(0.4f)
                     )
@@ -140,7 +140,7 @@ fun AddItemRentalOrderDialog(
                         OutlinedTextField(
                             value = rtnQuantity,
                             onValueChange = { rtnQuantity = it },
-                            label = { Text("Rtn Qty") },
+                            label = { Text("Rtn Qty", style = MaterialTheme.typography.labelLarge) },
                             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
 //                    modifier = Modifier.weight(0.4f)
                         )
@@ -149,7 +149,7 @@ fun AddItemRentalOrderDialog(
                     OutlinedTextField(
                         value = days,
                         onValueChange = { days = it },
-                        label = { Text("Days") },
+                        label = { Text("Days", style = MaterialTheme.typography.labelLarge) },
                         keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
 //                    modifier = Modifier.weight(0.4f)
                     )
@@ -157,7 +157,7 @@ fun AddItemRentalOrderDialog(
                     OutlinedTextField(
                         value = rentalPrice,
                         onValueChange = { rentalPrice = it },
-                        label = { Text("Rental Price") },
+                        label = { Text("Rental Price", style = MaterialTheme.typography.labelLarge) },
                         keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
 //                    modifier = Modifier.weight(0.6f)
                     )

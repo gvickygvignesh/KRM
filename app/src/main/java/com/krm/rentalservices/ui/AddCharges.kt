@@ -4,8 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,6 +17,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -27,10 +30,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.krm.rentalservices.R
+import com.krm.rentalservices.ui.theme.buttonColors
 import com.krm.rentalservices.viewmodel.RentalOrderViewModel
 
 @Composable
@@ -75,7 +82,7 @@ fun AddCharges(
         OutlinedTextField(
             value = remarks,
             onValueChange = { remarks = it },
-            label = { Text("Enter Remarks") },
+            label = { Text("Enter Remarks", style = MaterialTheme.typography.labelLarge) },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Done
@@ -91,15 +98,35 @@ fun AddCharges(
                 .padding(10.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Button(onClick = {
-                rentalOrderViewModel.addOtherChargesItem(
-                    otherChargeType = selectedChargeType,
-                    remarks = remarks,
-                    amount = chargeAmt.toLong()
-                )
-            }
+            Button(
+                onClick = {
+                    rentalOrderViewModel.addOtherChargesItem(
+                        otherChargeType = selectedChargeType,
+                        remarks = remarks,
+                        amount = chargeAmt.toLong()
+                    )
+                },
+                colors = MaterialTheme.colorScheme.buttonColors,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .padding(5.dp),
+                shape = RectangleShape,
             ) {
-                Text("Add Charges")
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.charges),
+                        contentDescription = "Add",
+//                            modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))  // Space between icon and text
+                    Text(
+                        "Add Charges", style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(0.dp)
+                    )
+                }
             }
 
             /*Button(
@@ -112,18 +139,20 @@ fun AddCharges(
         }*/
         }
 
-        // Table Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.primary)
-                .padding(vertical = 8.dp)
-        ) {
-            TableHeaderCell("Charge Type", Modifier.weight(0.8f))
-            TableHeaderCell("Remarks", Modifier.weight(1f))
-            TableHeadAmtCell("Amount", Modifier.weight(0.8f))
-        }
+        if (otherChargesItems.isNotEmpty()) {
+            // Table Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.primary)
+                    .padding(vertical = 8.dp)
+            ) {
+                TableHeaderCell("Charge Type", Modifier.weight(0.8f))
+                TableHeaderCell("Remarks", Modifier.weight(1f))
+                TableHeadAmtCell("Amount", Modifier.weight(0.8f))
+            }
 
+        }
 
         // LazyColumn for Payment Items
         LazyColumn(

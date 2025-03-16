@@ -127,14 +127,14 @@ fun AddProductDialog(
                 OutlinedTextField(
                     value = productForm.name,
                     onValueChange = { productForm = productForm.copy(name = it) },
-                    label = { Text("Item Name") },
+                    label = { Text("Item Name", style = MaterialTheme.typography.labelLarge) },
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 OutlinedTextField(
                     value = productForm.description,
                     onValueChange = { productForm = productForm.copy(description = it) },
-                    label = { Text("Description") },
+                    label = { Text("Description", style = MaterialTheme.typography.labelLarge) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     modifier = Modifier.fillMaxWidth()
@@ -143,7 +143,7 @@ fun AddProductDialog(
                 OutlinedTextField(
                     value = productForm.price,
                     onValueChange = { productForm = productForm.copy(price = it) },
-                    label = { Text("Price") },
+                    label = { Text("Price", style = MaterialTheme.typography.labelLarge) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()

@@ -20,7 +20,7 @@ import javax.inject.Inject
 const val FIREBASE_ITEMS_REF = "items"
 const val FIREBASE_INVENTORY_REF = "inventory"
 
-class InventoryRepository @Inject constructor(private val firebaseFirestore: FirebaseFirestore) {
+class InventoryRepository @Inject constructor(firebaseFirestore: FirebaseFirestore) {
     private val TAG: String = "KRM tag"
     private val fbftDB = firebaseFirestore.collection(FIREBASE_ITEMS_REF)
 

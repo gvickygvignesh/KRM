@@ -103,7 +103,7 @@ fun OrderPDFViewerScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Invoice PDF", style = MaterialTheme.typography.titleLarge)
+//        Text("Invoice PDF", style = MaterialTheme.typography.titleLarge)
 
         Spacer(modifier = Modifier.height(16.dp))
 

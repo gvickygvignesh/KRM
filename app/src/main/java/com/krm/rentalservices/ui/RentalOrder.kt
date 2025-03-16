@@ -2,36 +2,32 @@ package com.krm.rentalservices.ui
 
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -49,7 +48,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.itextpdf.kernel.colors.ColorConstants
@@ -63,23 +61,20 @@ import com.itextpdf.layout.element.Table
 import com.itextpdf.layout.property.TextAlignment
 import com.itextpdf.layout.property.UnitValue
 import com.krm.rentalservices.Constants
+import com.krm.rentalservices.R
 import com.krm.rentalservices.model.Customer
 import com.krm.rentalservices.model.OrderItem
 import com.krm.rentalservices.model.Product
 import com.krm.rentalservices.model.RentalOrder
+import com.krm.rentalservices.ui.theme.buttonColors
 import com.krm.rentalservices.utils.AutoCompleteTextField
 import com.krm.rentalservices.utils.Utils
-import com.krm.rentalservices.viewmodel.CustomersViewModel
-import com.krm.rentalservices.viewmodel.InventoryViewModel
 import com.krm.rentalservices.viewmodel.RentalOrderViewModel
 import java.io.File
 
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RentalOrder(
-    inventoryViewModel: InventoryViewModel = hiltViewModel(),
-    customersViewModel: CustomersViewModel = hiltViewModel(),
     rentalOrderViewModel: RentalOrderViewModel,
     navController: NavController,
     rentalOrder: RentalOrder?
@@ -110,35 +105,7 @@ fun RentalOrder(
         rentalOrderViewModel.setIsUpdateOrder(true)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = /*rentalOrderViewModel.selectedCustomer.value?.name
-                            ?: */"Rental Order", //ToDo return or update order
-                        color = Color.White
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        rentalOrderViewModel.clearData()
-                        navController.popBackStack()
-                    }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
-                    }
-                },
-                modifier = Modifier.heightIn(max = 56.dp),
-                colors = TopAppBarDefaults.mediumTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-    ) { innerPadding ->
+    Scaffold { innerPadding ->
         ConstraintLayout(
             modifier = Modifier
                 .fillMaxSize()
@@ -147,17 +114,28 @@ fun RentalOrder(
 
             Log.d(TAG, "RentalOrder: ConstraintLayout init called")
             val (firstRow, discountRow, balanceInfo, totalRow, allOptions, chargesRow, paymentRow) = createRefs()
+
+            if (showDialog) {
+                AddItemRentalOrderDialog(
+                    rentalOrderViewModel = rentalOrderViewModel,
+                    context = context,
+                    onDismiss = {
+                        showDialog = false
+                    },
+                )
+            }
+
             Column(
                 modifier = Modifier
                     .constrainAs(firstRow) {
-                        top.linkTo(parent.top, margin = 56.dp)
+                        top.linkTo(parent.top) //, margin = 56.dp
                         start.linkTo(parent.start)
                         end.linkTo(parent.end)
                         bottom.linkTo(chargesRow.top)
                         height = Dimension.fillToConstraints
                     }
                     .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+//                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Log.d(TAG, "RentalOrder: orderItems size" + orderItems.size)
 
@@ -174,46 +152,36 @@ fun RentalOrder(
                     isEnabled = if (isUpdateOrder) false else true
                 )
 
-                if (showDialog) {
-                    AddItemRentalOrderDialog(
-                        rentalOrderViewModel = rentalOrderViewModel,
-                        context = context,
-                        onDismiss = {
-                            showDialog = false
-                        },
-                    )
-                }
-
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .wrapContentHeight()
-//                        .background(MaterialTheme.colorScheme.primary)
-//                        .padding(vertical = 4.dp)
+                        .padding(top = 4.dp)
                 ) {
                     Text(
                         "ITEMS",
                         style = MaterialTheme.typography.titleMedium,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier
                             .weight(1f)
-                            .padding(horizontal = 5.dp)
                             .wrapContentSize(Alignment.CenterStart)
                             .align(Alignment.CenterVertically)
                     )
 
                     if (orderItems.isNotEmpty()) {
-                        Button(
+                        TextButton(
                             onClick = { showDialog = true },
-
-//                        style = MaterialTheme.typography.bodyLarge,
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(horizontal = 5.dp)
                                 .wrapContentSize(Alignment.CenterEnd),
-                            shape = RectangleShape
-//                            .align(Alignment.Start)
                         ) {
-                            Text("+ Item")
+                            Text(
+                                "+ Item",
+                                fontSize = 17.sp,
+                                fontFamily = FontFamily.Monospace,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -221,12 +189,28 @@ fun RentalOrder(
                 if (orderItems.isEmpty()) {
                     Button(
                         onClick = { showDialog = true },
+                        colors = MaterialTheme.colorScheme.buttonColors,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.CenterHorizontally),
+                            .align(Alignment.CenterHorizontally)
+                            .fillMaxWidth(),
                         shape = RectangleShape
                     ) {
-                        Text("Add Items")
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.add),
+                                contentDescription = "Add",
+//                            modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))  // Space between icon and text
+                            Text(
+                                "Add Items", style = MaterialTheme.typography.titleSmall,
+                                modifier = Modifier.padding(0.dp)
+                            )
+                        }
+
+//                        Text("Add Items", style = MaterialTheme.typography.titleMedium)
                     }
                 }
 
@@ -235,7 +219,7 @@ fun RentalOrder(
                     modifier = Modifier
                         .fillMaxWidth()
 //                        .wrapContentHeight()
-                        .padding(vertical = 4.dp)
+//                        .padding(vertical = 4.dp)
                 ) {
                     items(orderItems) { orderItem ->
                         Row(
@@ -252,23 +236,34 @@ fun RentalOrder(
                                         timestamp = null
                                     )
                                     rentalOrderViewModel.selectProduct(product)
-//                                    isEditOrderItem = true
-
                                 },
-                            verticalAlignment = Alignment.CenterVertically,
+//                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-
-                            TableCellBig(orderItem.productName, Modifier.weight(1.5f))
+                            ItemNQty(
+                                orderItem.productName,
+                                Modifier
+                                    .weight(1.5f)
+                                    .align(Alignment.Top)
+                            )
                             TableCell(
-                                "${orderItem.quantity} PCS × ${orderItem.days}D * ₹${orderItem.rentalPrice}",
-                                Modifier.weight(1.5f)
+                                "${orderItem.quantity} PCS × ${orderItem.days}D × ₹${orderItem.rentalPrice}",
+                                Modifier
+                                    .weight(1.5f)
+                                    .align(Alignment.Bottom)
                             )
                             if (isUpdateOrder && rentalOrder!!.orderStatus == Constants.RETURNED_ORDER) {
-                                TableCell("${orderItem.rtnQty} PCS Rtn", Modifier.weight(1f))
+                                TableCell(
+                                    "${orderItem.rtnQty} PCS Rtn",
+                                    Modifier
+                                        .weight(1f)
+                                        .align(Alignment.Bottom)
+                                )
                             }
                             TableAmtCell(
                                 "₹${orderItem.rentalPrice * orderItem.days * orderItem.quantity}",
-                                Modifier.weight(1f)
+                                Modifier
+                                    .weight(1f)
+                                    .align(Alignment.Bottom)
                             )
                         }
                     }
@@ -285,7 +280,7 @@ fun RentalOrder(
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier
                         .weight(1f)
-                        .padding(horizontal = 10.dp)
+//                        .padding(horizontal = 4.dp)
                         .wrapContentSize(Alignment.CenterEnd)
                         .align(Alignment.CenterVertically)
                 )
@@ -307,7 +302,7 @@ fun RentalOrder(
                         bottom.linkTo(totalRow.top, margin = 5.dp)
                         end.linkTo(parent.end)
                     }
-                    .padding(horizontal = 10.dp)
+//                    .padding(horizontal = 4.dp)
                     .wrapContentSize(Alignment.CenterEnd)
             )
 
@@ -320,7 +315,7 @@ fun RentalOrder(
                         bottom.linkTo(paymentRow.top, margin = 5.dp)
                         end.linkTo(parent.end)
                     }
-                    .padding(horizontal = 10.dp)
+//                    .padding(horizontal = 4.dp)
                     .wrapContentSize(Alignment.CenterEnd)
             )
 
@@ -332,20 +327,21 @@ fun RentalOrder(
                         bottom.linkTo(balanceInfo.top)
                         end.linkTo(parent.end)
                     }
-                    .padding(horizontal = 10.dp)
+//                    .padding(horizontal = 4.dp)
                     .wrapContentSize(Alignment.CenterEnd)
             )
 
             Text(
                 text = "Balance : " + (totalAmount - paidAmount),
                 color = Color.Red,
+                fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier
                     .constrainAs(balanceInfo) {
                         bottom.linkTo(allOptions.top)
                         end.linkTo(parent.end)
                     }
-                    .padding(horizontal = 10.dp)
+//                    .padding(horizontal = 4.dp)
                     .wrapContentSize(Alignment.CenterEnd)
 //                .align(Alignment.CenterVertically)
             )
@@ -360,27 +356,44 @@ fun RentalOrder(
             ) {
                 Button(
                     onClick = { navController.navigate(Constants.ADD_CHARGES_ROUTE) },
-                    Modifier
+                    colors = MaterialTheme.colorScheme.buttonColors,
+                    modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(10.dp),
+                        .padding(5.dp),
                     shape = RectangleShape,
+                    contentPadding = PaddingValues(2.dp)
                 ) {
                     /*Image(
                         painter = painterResource(id = R.drawable.charges),  // Replace with your PNG image resource
                         contentDescription = "Choose Customer",  // Optional: For accessibility
                         modifier = Modifier.size(40.dp)  // Modify the size as needed
                     )*/
-                    Text("Add Charges")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.charges),
+                            contentDescription = "Add",
+//                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))  // Space between icon and text
+                        Text(
+                            "Add Charges", style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(0.dp)
+                        )
+                    }
                 }
 
                 Button(
                     onClick = { navController.navigate(Constants.ADD_PAYMENT_ROUTE) },
-                    Modifier
+                    colors = MaterialTheme.colorScheme.buttonColors,
+                    modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(10.dp),
-                    shape = RectangleShape
+                        .padding(5.dp),
+                    shape = RectangleShape,
+                    contentPadding = PaddingValues(2.dp)
 
                 ) {
                     /*Image(
@@ -388,8 +401,21 @@ fun RentalOrder(
                         contentDescription = "Payment",  // Optional: For accessibility
                         modifier = Modifier.size(40.dp)  // Modify the size as needed
                     )*/
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.money),
+                            contentDescription = "Add",
+//                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))  // Space between icon and text
+                        Text(
+                            "Add Payment", style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(0.dp)
+                        )
+                    }
 
-                    Text("Add Payment")
                 }
 
                 Button(
@@ -402,20 +428,38 @@ fun RentalOrder(
                             navController = navController
                         )
                     },
-                    Modifier
+                    colors = MaterialTheme.colorScheme.buttonColors,
+                    modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .padding(10.dp),
-                    shape = RectangleShape
+                        .padding(5.dp),
+                    shape = RectangleShape,
+                    contentPadding = PaddingValues(2.dp)
                 ) {
-                    /*Image(
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.invoice),  // Example: Add Icon
+                            contentDescription = "Add",
+//                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))  // Space between icon and text
+                        Text(
+                            "Preview Invoice", style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(0.dp)
+                        )
+                    }
+                }
+                /*{
+                    *//*Image(
                         painter = painterResource(id = R.drawable.next),  // Replace with your PNG image resource
                         contentDescription = "Save order",  // Optional: For accessibility
                         modifier = Modifier.size(40.dp)  // Modify the size as needed
-                    )*/
+                    )*//*
 
                     Text("Preview Invoice")
-                }
+                }*/
             }
         }
     }
@@ -502,7 +546,7 @@ fun TableCell(text: String, modifier: Modifier) {
     Text(
         text = text,
         modifier = modifier.padding(3.dp),
-        fontSize = 12.sp,
+        fontSize = 14.sp,
         textAlign = TextAlign.Left
     )
 }
@@ -521,23 +565,23 @@ fun TableCellBig(text: String, modifier: Modifier) {
 }
 
 @Composable
-fun TableCellRtn(text: String, modifier: Modifier) {
+fun ItemNQty(text: String, modifier: Modifier) {
     Column(modifier) {
         Text(
-            text = "Rtn Qty" + text,
-            modifier = modifier.padding(3.dp),
-            fontSize = 12.sp,
-//            fontFamily = FontFamily.SansSerif,
+            text = text,
+//            modifier = modifier.padding(3.dp),
+            fontSize = 17.sp,
+            fontFamily = FontFamily.Monospace,
             textAlign = TextAlign.Left
         )
 
-        /*Text(
-            text = text,
-            modifier = modifier.padding(3.dp),
+        Text(
+            text = "Qty × Days × Rate",
+//            modifier = modifier.padding(3.dp),
 //            fontFamily = FontFamily.Monospace,
-            fontSize = 12.sp,
+            fontSize = 14.sp,
             textAlign = TextAlign.Left
-        )*/
+        )
     }
 }
 
@@ -557,7 +601,7 @@ fun TableAmtCell(text: String, modifier: Modifier) {
     Text(
         text = text,
         modifier = modifier.padding(3.dp),
-        fontSize = 12.sp,
+        fontSize = 14.sp,
         textAlign = TextAlign.Right
     )
 }
@@ -612,12 +656,6 @@ fun generateInvoicePdfFile(
 // Add the table to the document
         document.add(invoiceTable)
 
-        /*  document.add(
-              Paragraph("Invoice No: $invoiceNo   Invoice Date: $invoiceDate")
-                  .setFontSize(12f)
-                  .setTextAlignment(TextAlignment.RIGHT)
-          )*/
-
         // ** Customer Details **
         document.add(
             Paragraph(
@@ -629,46 +667,45 @@ fun generateInvoicePdfFile(
         )
 
         // ** Order Table **
-        var table: Table?
-        if (isReturnOrder) {
-            table = Table(floatArrayOf(3f, 1f, 1f, 1f, 2f, 2f)).useAllAvailableWidth()
+        val table: Table? = if (isReturnOrder) {
+            Table(floatArrayOf(3f, 1f, 1f, 1f, 2f, 2f)).useAllAvailableWidth()
         } else {
-            table = Table(floatArrayOf(3f, 1f, 1f, 2f, 2f)).useAllAvailableWidth()
+            Table(floatArrayOf(3f, 1f, 1f, 2f, 2f)).useAllAvailableWidth()
         }
 
-        table.addCell(
+        table?.addCell(
             Cell().add(Paragraph("ITEMS").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY)
         )
-        table.addCell(
+        table?.addCell(
             Cell().add(Paragraph("QTY").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY)
         )
 
         if (isReturnOrder) {
-            table.addCell(
+            table?.addCell(
                 Cell().add(Paragraph("Rtn QTY").setBold())
                     .setBackgroundColor(ColorConstants.LIGHT_GRAY)
             )
         }
-        table.addCell(
+        table?.addCell(
             Cell().add(Paragraph("DAYS").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY)
         )
-        table.addCell(
+        table?.addCell(
             Cell().add(Paragraph("RATE").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY)
         )
-        table.addCell(
+        table?.addCell(
             Cell().add(Paragraph("AMOUNT").setBold()).setBackgroundColor(ColorConstants.LIGHT_GRAY)
         )
 
         // ** Dynamically Add Order Items **
         for (item in orderItems) {
-            table.addCell(item["productName"].toString())
-            table.addCell(item["quantity"].toString())
+            table?.addCell(item["productName"].toString())
+            table?.addCell(item["quantity"].toString())
             if (isReturnOrder) {
-                table.addCell(item["rtnQty"].toString())
+                table?.addCell(item["rtnQty"].toString())
             }
-            table.addCell(item["days"].toString())
-            table.addCell(item["rentalPrice"].toString())
-            table.addCell(item["amount"].toString())
+            table?.addCell(item["days"].toString())
+            table?.addCell(item["rentalPrice"].toString())
+            table?.addCell(item["amount"].toString())
         }
         document.add(table)
 
@@ -758,16 +795,6 @@ fun generateInvoicePdfFile(
         println("✅ PDF generated at: ${pdfFile.absolutePath}")
     } catch (e: Exception) {
         e.printStackTrace()
-    }
-
-    fun openPdf(context: Context) {
-        val pdfFile =
-            File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Invoice.pdf")
-        val uri = Uri.fromFile(pdfFile)
-        val intent = Intent(Intent.ACTION_VIEW)
-        intent.setDataAndType(uri, "application/pdf")
-        intent.flags = Intent.FLAG_ACTIVITY_NO_HISTORY
-        context.startActivity(intent)
     }
 }
 

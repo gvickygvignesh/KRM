@@ -41,7 +41,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class RentalOrderViewModel @Inject constructor(
+open class RentalOrderViewModel @Inject constructor(
     private val inventoryRepository: InventoryRepository,
     private val customersRepository: CustomersRepository,
     private val rentalOrdersRepository: RentalOrdersRepository

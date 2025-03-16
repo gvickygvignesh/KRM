@@ -15,10 +15,11 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.KRM"
         tools:targetApi="31" >
+        <!--android:theme="@style/Theme.KRM"-->
         <activity
             android:name="com.krm.rentalservices.ui.MainActivity"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

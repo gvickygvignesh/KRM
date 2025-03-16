@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
@@ -36,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.firebase.Timestamp
 import com.krm.rentalservices.model.InventoryItem
 import com.krm.rentalservices.model.Product
@@ -130,7 +130,7 @@ fun ManageInventory(
         verticalArrangement = Arrangement.spacedBy(8.dp)
 
     ) {
-        val ind = CircularProgressIndicator(LocalContext.current)
+//        val progressBar = CircularProgressIndicator()
         /*when (prodState.value.success) {
             SUCCESS, ERROR_INTERNET -> {*/
         // Spinner Composable
@@ -190,8 +190,10 @@ fun ManageInventory(
 //        }
 
         when (prodState.value.isLoading) {
-            true -> ind.show()
-            false -> ind.hide()
+            true -> {
+                CircularProgressIndicator()
+            }
+            false ->  {}
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -353,7 +355,7 @@ fun ProductSpinner(
             value = selectedItem?.name ?: "Select Product",
             onValueChange = {},
             readOnly = true,
-            label = { Text("Select Product") },
+            label = { Text("Select Product",style = MaterialTheme.typography.labelLarge) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = modifier.menuAnchor()
         )
@@ -364,7 +366,7 @@ fun ProductSpinner(
         ) {
             // Option to reset selection
             DropdownMenuItem(
-                text = { Text("Select Product") },
+                text = { Text("Select Product", style = MaterialTheme.typography.labelLarge) },
                 onClick = {
                     expanded = false
                     onProductSelected(Product("", "", 0, "", null)) // Reset product
@@ -373,7 +375,7 @@ fun ProductSpinner(
 
             products.forEach { product ->
                 DropdownMenuItem(
-                    text = { Text(product.name) },
+                    text = { Text(product.name, style = MaterialTheme.typography.labelLarge) },
                     onClick = {
                         expanded = false // Close dropdown
                         onProductSelected(product) // Notify parent about selection
